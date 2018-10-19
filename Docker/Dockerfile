@@ -2,12 +2,21 @@ FROM eosio/builder as builder
 ARG branch=master
 ARG symbol=SYS
 
-RUN git clone -b $branch https://github.com/EOSIO/eos.git --recursive \
-    && cd eos && echo "$branch:$(git rev-parse HEAD)" > /etc/eosio-version \
+RUN apt-get update && DEBIAN_FRONTENT=noninteractive apt-get -y install libcurl4-openssl-dev
+
+RUN git clone -b $branch https://github.com/aws/aws-sdk-cpp.git
+
+RUN git clone -b $branch https://github.com/necokeine/eos.git --recursive
+
+RUN cd aws-sdk-cpp && cmake -DCMAKE_BUILD_TYPE=Release . \
+    && make && make install && cd ..
+
+RUN cd eos/plugins && git clone -b $branch https://github.com/necokeine/kinesis_plugin.git && cd ../..
+
+RUN cd eos && echo "$branch:$(git rev-parse HEAD)" > /etc/eosio-version \
     && cmake -H. -B"/tmp/build" -GNinja -DCMAKE_BUILD_TYPE=Release -DWASM_ROOT=/opt/wasm -DCMAKE_CXX_COMPILER=clang++ \
        -DCMAKE_C_COMPILER=clang -DCMAKE_INSTALL_PREFIX=/tmp/build -DBUILD_MONGO_DB_PLUGIN=true -DCORE_SYMBOL_NAME=$symbol \
     && cmake --build /tmp/build --target install && rm /tmp/build/bin/eosiocpp
-
 
 FROM ubuntu:18.04
 
