@@ -8,6 +8,7 @@
 #include <thread>
 #include <atomic>
 #include <vector>
+#include <chrono>
 #include <boost/noncopyable.hpp>
 #include <fc/log/logger.hpp>
 
@@ -49,6 +50,10 @@ consumer<T>::~consumer()
 {
     m_fifo.set_behavior(fifo<T>::behavior::not_blocking);
     m_exit = true;
+    using namespace std::chrono_literals;
+    while (!m_fifo.empty()) {
+	    std::this_thread::sleep_for(10s);
+    }
     m_thread->join();
 }
 

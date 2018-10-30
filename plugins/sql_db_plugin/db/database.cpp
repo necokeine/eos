@@ -1,4 +1,5 @@
 #include "database.h"
+#include <iostream>
 
 namespace eosio
 {
@@ -22,8 +23,6 @@ database::consume(const std::vector<chain::block_state_ptr> &blocks)
             if (m_block_num_start > 0 && block->block_num < m_block_num_start) {
                 continue;
             }
-
-
             m_blocks_table->add(block->block);
             for (const auto &transaction : block->trxs) {
                 m_transactions_table->add(block->block_num, transaction->trx);

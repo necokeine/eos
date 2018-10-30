@@ -25,6 +25,7 @@ public:
     void push(const T& element);
     std::vector<T> pop_all();
     void set_behavior(behavior value);
+    bool empty();
 
 private:
     std::mutex m_mux;
@@ -48,6 +49,13 @@ void fifo<T>::push(const T& element)
 }
 
 template<typename T>
+bool fifo<T>::empty() {
+    std::unique_lock<std::mutex> lock(m_mux);
+    m_cond.notify_one();
+    return m_deque.empty();
+}
+
+template<typename T>
 std::vector<T> fifo<T>::pop_all()
 {
     std::unique_lock<std::mutex> lock(m_mux);
@@ -65,8 +73,9 @@ std::vector<T> fifo<T>::pop_all()
 template<typename T>
 void fifo<T>::set_behavior(behavior value)
 {
+    std::unique_lock<std::mutex> lock(m_mux);
     m_behavior = value;
-    m_cond.notify_all();
+    // m_cond.notify_all();
 }
 
 } // namespace
