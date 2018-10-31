@@ -1,17 +1,17 @@
-FROM eosio/builder as builder
+FROM necokeine/eosbuilder as builder
 ARG branch=master
 ARG symbol=SYS
 
-RUN apt-get update && DEBIAN_FRONTENT=noninteractive apt-get -y install libcurl4-openssl-dev libsoci-dev
-
 RUN git clone -b $branch https://github.com/aws/aws-sdk-cpp.git
-
-RUN git clone -b $branch https://github.com/necokeine/eos.git --recursive
 
 RUN cd aws-sdk-cpp && cmake -DCMAKE_BUILD_TYPE=Release . \
     && make && make install && cd ..
 
+RUN git clone -b $branch https://github.com/necokeine/eos.git --recursive
+
 RUN cd eos/plugins && git clone -b $branch https://github.com/necokeine/kinesis_plugin.git && cd ../..
+
+RUN apt-get update && DEBIAN_FRONTENT=noninteractive apt-get -y install libcurl4-openssl-dev libsoci-dev
 
 RUN cd eos && echo "$branch:$(git rev-parse HEAD)" > /etc/eosio-version \
     && cmake -H. -B"/tmp/build" -GNinja -DCMAKE_BUILD_TYPE=Release -DWASM_ROOT=/opt/wasm -DCMAKE_CXX_COMPILER=clang++ \

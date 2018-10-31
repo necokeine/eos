@@ -1,8 +1,8 @@
-#find_package(Soci)
-#if(NOT SOCI_FOUND)
-#    message(STATUS "Database SQL plugin: disabled")
-#    return()
-#endif()
+find_package(Soci)
+if(NOT SOCI_FOUND)
+    message(STATUS "Database SQL plugin: disabled")
+    return()
+endif()
 
 message(STATUS "Database SQL plugin: enabled")
 
@@ -20,11 +20,8 @@ add_library(sql_db_plugin
 target_link_libraries(sql_db_plugin
     chain_plugin
     eosio_chain
-    libsoci_mysql.so
-    libsoci_core.so
-    libsoci_empty.so
-    #    ${SOCI_LIBRARY}
+    ${SOCI_LIBRARY}
     )
 
-#add_subdirectory(test)
+add_subdirectory(test)
 

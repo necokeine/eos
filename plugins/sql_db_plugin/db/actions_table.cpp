@@ -32,10 +32,10 @@ void actions_table::create()
             "parent INT DEFAULT NULL,"
             "name VARCHAR(12),"
             "created_at DATETIME DEFAULT NOW(),"
-            "`eosto` varchar(12) GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.to'))),"
-            "`eosfrom` varchar(12) GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.from'))),"
-            "`receiver` varchar(12) GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.receiver'))),"
-            "`payer` varchar(12) GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.payer'))),"
+            "`eosto` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.to'),"
+            "`eosfrom` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.from'),"
+            "`receiver` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.receiver'),"
+            "`payer` varchar(12) GENERATED ALWAYS AS (`data` ->> '$.payer'),"
             "data JSON, FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,"
             "FOREIGN KEY (account) REFERENCES accounts(name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
 
@@ -96,12 +96,9 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
         return; // no ABI no party. Should we still store it?
     }
 
-    // Necokeine, to 10 seconds temporarily.
-    const auto abi_serializer_max_time = fc::seconds(10);
+    abis.set_abi(abi);
 
-    abis.set_abi(abi, abi_serializer_max_time);
-
-    auto abi_data = abis.binary_to_variant(abis.get_action_type(action.name), action.data, abi_serializer_max_time);
+    auto abi_data = abis.binary_to_variant(abis.get_action_type(action.name), action.data);
     string json = fc::json::to_string(abi_data);
 
     boost::uuids::random_generator gen;
