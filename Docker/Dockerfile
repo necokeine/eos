@@ -1,7 +1,6 @@
 FROM necokeine/eosbuilder as builder
 ARG branch=master
 ARG symbol=SYS
-RUN echo 1
 RUN git clone -b $branch https://github.com/necokeine/eos.git --recursive
 
 RUN cd eos/plugins && git clone -b $branch https://github.com/necokeine/kinesis_plugin.git && cd ../..
