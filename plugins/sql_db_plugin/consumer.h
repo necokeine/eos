@@ -59,8 +59,12 @@ template<typename T>
 void consumer<T>::run() {
     dlog("Consumer thread Start");
     while (!m_exit) {
-        auto elements = m_fifo.pop_all();
-        m_core->consume(elements);
+        try {
+            auto elements = m_fifo.pop_all();
+            m_core->consume(elements);
+        } catch (const std::exception &ex) {
+            elog("${e}", ("e", ex.what())); // prevent crash some errors in decode.
+        }
     }
     dlog("Consumer thread End");
 }
