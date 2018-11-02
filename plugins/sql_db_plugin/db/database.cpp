@@ -15,14 +15,12 @@ database::database(const std::string &uri, uint32_t block_num_start)
 }
 
 void
-database::consume(const std::vector<chain::block_state_ptr> &blocks)
-{
+database::consume(const std::vector<chain::block_state_ptr> &blocks) {
     try {
         for (const auto &block : blocks) {
             if (m_block_num_start > 0 && block->block_num < m_block_num_start) {
                 continue;
             }
-
 
             m_blocks_table->add(block->block);
             for (const auto &transaction : block->trxs) {
@@ -38,7 +36,6 @@ database::consume(const std::vector<chain::block_state_ptr> &blocks)
                     }
                 }
             }
-
         }
     } catch (const std::exception &ex) {
         elog("${e}", ("e", ex.what())); // prevent crash
@@ -46,8 +43,7 @@ database::consume(const std::vector<chain::block_state_ptr> &blocks)
 }
 
 void
-database::wipe()
-{
+database::wipe() {
     *m_session << "SET foreign_key_checks = 0;";
 
     m_actions_table->drop();
@@ -65,9 +61,7 @@ database::wipe()
     m_accounts_table->add(system_account);
 }
 
-bool
-database::is_started()
-{
+bool database::is_started() {
     return m_accounts_table->exist(system_account);
 }
 

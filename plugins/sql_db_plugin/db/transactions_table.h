@@ -7,8 +7,7 @@
 
 namespace eosio {
 
-class transactions_table
-{
+class transactions_table {
 public:
     transactions_table(std::shared_ptr<soci::session> session);
 

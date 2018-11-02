@@ -37,13 +37,11 @@ void sql_db_plugin::set_program_options(options_description& cli, options_descri
             ;
 }
 
-void sql_db_plugin::plugin_initialize(const variables_map& options)
-{
+void sql_db_plugin::plugin_initialize(const variables_map& options) {
     ilog("initialize");
 
     std::string uri_str = options.at(SQL_DB_URI_OPTION).as<std::string>();
-    if (uri_str.empty())
-    {
+    if (uri_str.empty()) {
         wlog("db URI not specified => eosio::sql_db_plugin disabled.");
         return;
     }
@@ -63,7 +61,7 @@ void sql_db_plugin::plugin_initialize(const variables_map& options)
     }
 
     m_block_consumer = std::make_unique<consumer<chain::block_state_ptr>>(std::move(db));
-    m_irreversible_block_consumer = std::make_unique<consumer<chain::block_state_ptr>>(std::move(db));
+    //m_irreversible_block_consumer = std::make_unique<consumer<chain::block_state_ptr>>(std::move(db));
 
     chain_plugin* chain_plug = app().find_plugin<chain_plugin>();
     FC_ASSERT(chain_plug);
@@ -82,7 +80,7 @@ void sql_db_plugin::plugin_shutdown()
 {
     ilog("shutdown");
     m_block_connection.reset();
-    m_irreversible_block_connection.reset();
+    //m_irreversible_block_connection.reset();
 }
 
 } // namespace eosio

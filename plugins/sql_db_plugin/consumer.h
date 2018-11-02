@@ -39,31 +39,26 @@ consumer<T>::consumer(std::unique_ptr<consumer_core<T> > core):
     m_fifo(fifo<T>::behavior::blocking),
     m_core(std::move(core)),
     m_exit(false),
-    m_thread(std::make_unique<std::thread>([&]{this->run();}))
-{
+    m_thread(std::make_unique<std::thread>([&]{this->run();})) {
 
 }
 
 template<typename T>
-consumer<T>::~consumer()
-{
+consumer<T>::~consumer() {
     m_fifo.set_behavior(fifo<T>::behavior::not_blocking);
     m_exit = true;
     m_thread->join();
 }
 
 template<typename T>
-void consumer<T>::push(const T& element)
-{
+void consumer<T>::push(const T& element) {
     m_fifo.push(element);
 }
 
 template<typename T>
-void consumer<T>::run()
-{
+void consumer<T>::run() {
     dlog("Consumer thread Start");
-    while (!m_exit)
-    {
+    while (!m_exit) {
         auto elements = m_fifo.pop_all();
         m_core->consume(elements);
     }

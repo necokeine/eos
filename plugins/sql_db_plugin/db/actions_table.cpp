@@ -76,9 +76,7 @@ void actions_table::create()
             "FOREIGN KEY (account) REFERENCES accounts(name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
 }
 
-void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, uint8_t seq)
-{
-
+void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, uint8_t seq) {
     chain::abi_def abi;
     std::string abi_def_account;
     chain::abi_serializer abis;
@@ -127,8 +125,7 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
     }
 }
 
-void actions_table::parse_actions(chain::action action, fc::variant abi_data)
-{
+void actions_table::parse_actions(chain::action action, fc::variant abi_data) {
     // TODO: move all  + catch // public keys update // stake / voting
     if (action.name == N(issue)) {
 
@@ -154,7 +151,6 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data)
     }
 
     if (action.name == N(transfer)) {
-
         auto from_name = abi_data["from"].as<chain::name>().to_string();
         auto to_name = abi_data["to"].as<chain::name>().to_string();
         auto asset_quantity = abi_data["quantity"].as<chain::asset>();
@@ -239,7 +235,6 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data)
                     soci::use(public_key_active),
                     soci::use(permission_active);
         }
-
     }
 }
 

@@ -47,8 +47,8 @@ private:
     std::unique_ptr<consumer<chain::block_state_ptr>> m_block_consumer;
     fc::optional<boost::signals2::scoped_connection> m_block_connection;
 
-    std::unique_ptr<consumer<chain::block_state_ptr>> m_irreversible_block_consumer;
-    fc::optional<boost::signals2::scoped_connection> m_irreversible_block_connection;
+    //std::unique_ptr<consumer<chain::block_state_ptr>> m_irreversible_block_consumer;
+    //fc::optional<boost::signals2::scoped_connection> m_irreversible_block_connection;
 };
 
 }

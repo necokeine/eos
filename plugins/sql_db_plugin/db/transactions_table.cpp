@@ -6,13 +6,11 @@
 namespace eosio {
 
 transactions_table::transactions_table(std::shared_ptr<soci::session> session):
-    m_session(session)
-{
+    m_session(session) {
 
 }
 
-void transactions_table::drop()
-{
+void transactions_table::drop() {
     try {
         *m_session << "DROP TABLE IF EXISTS transactions";
     }
