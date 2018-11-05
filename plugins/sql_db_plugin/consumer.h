@@ -40,7 +40,6 @@ consumer<T>::consumer(std::unique_ptr<consumer_core<T> > core):
     m_core(std::move(core)),
     m_exit(false),
     m_thread(std::make_unique<std::thread>([&]{this->run();})) {
-
 }
 
 template<typename T>
@@ -62,8 +61,12 @@ void consumer<T>::run() {
         try {
             auto elements = m_fifo.pop_all();
             m_core->consume(elements);
-        } catch (const std::exception &ex) {
-            elog("${e}", ("e", ex.what())); // prevent crash some errors in decode.
+        } catch (fc::exception &e) {
+            elog("FC Exception while consume data: ${e}", ("e", e.to_detail_string()));
+        } catch (std::exception &e) {
+            elog("STD Exception while consume data: ${e}", ("e", e.what()));
+        } catch (...) {
+            elog("Unknown exception happen during consuming data."); // prevent crash some errors in decode.
         }
     }
     dlog("Consumer thread End");

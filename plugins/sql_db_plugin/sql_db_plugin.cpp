@@ -50,8 +50,8 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
     auto db = std::make_unique<database>(uri_str, block_num_start);
 
     if (options.at(HARD_REPLAY_OPTION).as<bool>() ||
-         options.at(REPLAY_OPTION).as<bool>() ||
-         options.at(RESYNC_OPTION).as<bool>() ||
+        options.at(REPLAY_OPTION).as<bool>() ||
+        options.at(RESYNC_OPTION).as<bool>() ||
         !db->is_started())
     {
         if (block_num_start == 0) {
