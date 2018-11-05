@@ -39,7 +39,7 @@ database::consume(const std::vector<chain::block_state_ptr> &blocks) {
     } catch (const std::exception &ex) {
         elog("${e}", ("e", ex.what())); // prevent crash
     } catch (...) {
-        elog("Unknown exception during consuming."// Do no thing.
+        elog("Unknown exception during consuming.");// Do no thing.
     }
 }
 
