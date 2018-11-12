@@ -12,6 +12,7 @@ void actions_table::drop() {
         *m_session << "drop table IF EXISTS votes";
         *m_session << "drop table IF EXISTS tokens";
         *m_session << "drop table IF EXISTS actions";
+        *m_session << "drop table IF EXISTS bids";
     }
     catch(std::exception& e){
         wlog(e.what());
@@ -70,6 +71,12 @@ void actions_table::create() {
             "cpu REAL(14,4),"
             "net REAL(14,4),"
             "FOREIGN KEY (account) REFERENCES accounts(name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
+
+    *m_session << "CREATE TABLE bids("
+            "newname VARCHAR(13) PRIMARY KEY,"
+            "bidder VARCHAR(13),"
+            "quantity REAL(14,4))"
+            "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
 }
 
 void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, uint8_t seq) {
@@ -185,6 +192,16 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data) {
         return;
     }
 
+    if (action.name == N(bidname)) {
+        auto bidder = abi_data["bidder"].as<chain::name>().to_string();
+        auto newname = abi_data["newname"].as<chain::name>().to_string();
+        auto bid = abi_data["bid"].as<chain::asset>().to_real();
+        *m_session << "REPLACE INTO bids(bidder, newname, quantity) VALUES (:bd, :ne, :qu) ",
+            soci::use(bidder),
+            soci::use(newname),
+            soci::use(bid);
+    }
+
     if (action.name == N(voteproducer)) {
         auto voter = abi_data["voter"].as<chain::name>().to_string();
         string votes = fc::json::to_string(abi_data["producers"]);
@@ -193,7 +210,6 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data) {
                 soci::use(voter),
                 soci::use(votes);
     }
-
 
     if (action.name == N(delegatebw)) {
         auto account = abi_data["receiver"].as<chain::name>().to_string();
