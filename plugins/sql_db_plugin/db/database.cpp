@@ -12,9 +12,11 @@ database::database(const std::string &uri, uint32_t block_num_start) {
     m_actions_table = std::make_unique<actions_table>(m_read_session, m_write_session);
     m_block_num_start = block_num_start;
     system_account = chain::name(chain::config::system_account_name).to_string();
+    m_stoped = false;
 }
 
 void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
+    dlog("consuming " + blocks[0]->block_num);
     if (m_stoped) return; // Already a unhandled error happen.
     try {
         for (const auto &block : blocks) {
