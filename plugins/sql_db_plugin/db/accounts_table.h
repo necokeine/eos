@@ -8,8 +8,7 @@ namespace eosio {
 
 using std::string;
 
-class accounts_table
-{
+class accounts_table {
 public:
     accounts_table(std::shared_ptr<soci::session> session);
 

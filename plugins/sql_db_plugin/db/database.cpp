@@ -1,10 +1,8 @@
 #include "database.h"
 
-namespace eosio
-{
+namespace eosio {
 
-database::database(const std::string &uri, uint32_t block_num_start)
-{
+database::database(const std::string &uri, uint32_t block_num_start) {
     m_session = std::make_shared<soci::session>(uri);
     m_accounts_table = std::make_unique<accounts_table>(m_session);
     m_blocks_table = std::make_unique<blocks_table>(m_session);
@@ -14,26 +12,55 @@ database::database(const std::string &uri, uint32_t block_num_start)
     system_account = chain::name(chain::config::system_account_name).to_string();
 }
 
-void
-database::consume(const std::vector<chain::block_state_ptr> &blocks) {
+void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
+    if (m_stoped) return; // Already a unhandled error happen.
     try {
         for (const auto &block : blocks) {
-            if (m_block_num_start > 0 && block->block_num < m_block_num_start) {
-                continue;
-            }
-            m_blocks_table->add(block->block);
-            for (const auto &transaction : block->trxs) {
-                m_transactions_table->add(block->block_num, transaction->trx);
-                uint8_t seq = 0;
-                for (const auto &action : transaction->trx.actions) {
+            try {
+                if (m_block_num_start > 0 && block->block_num < m_block_num_start) {
+                    continue;
+                }
+                int error_count = 0;
+                while (error_count < 10) {
                     try {
-                        m_actions_table->add(action, transaction->trx.id(), transaction->trx.expiration, seq);
-                        seq++;
+                       error_count ++;
+                        soci::transaction tran(*m_session);
+                        m_blocks_table->add(block->block);
+                        for (const auto &transaction : block->trxs) {
+                            m_transactions_table->add(block->block_num, transaction->trx);
+                            uint8_t seq = 0;
+                            for (const auto &action : transaction->trx.actions) {
+                                try {
+                                    m_actions_table->add(action, transaction->trx.id(), transaction->trx.expiration, seq);
+                                    seq++;
+                                } catch (const fc::assert_exception &ex) { // malformed actions
+                                    wlog("${e}", ("e", ex.what()));
+                                    continue;
+                                }
+                            }
+                        }
+                        tran.commit();
+                        error_count = 0; // Commited successfully.
+                        break;
+                    } catch (const std::exception & ex) {
+                        elog("${e}", ("e", ex.what())); // prevent crash
                     } catch (const fc::assert_exception &ex) { // malformed actions
                         wlog("${e}", ("e", ex.what()));
-                        continue;
+                    } catch (...) {
+                        elog(boost::current_exception_diagnostic_information());
+                        elog("Unknown expection during consuming block: " + block->block_num);
                     }
                 }
+                if (error_count) {
+                    m_stoped = true;
+                }
+            } catch (const std::exception & ex) {
+                elog("${e}", ("e", ex.what())); // prevent crash
+            } catch (const fc::assert_exception &ex) { // malformed actions
+                wlog("${e}", ("e", ex.what()));
+            } catch (...) {
+                elog(boost::current_exception_diagnostic_information());
+                elog("Unknown expection during consuming block: " + block->block_num);
             }
         }
     } catch (const std::exception &ex) {

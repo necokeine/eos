@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <mutex>
+#include <atomic>
 
 #include <soci/soci.h>
 
@@ -36,6 +37,7 @@ private:
     std::unique_ptr<blocks_table> m_blocks_table;
     std::unique_ptr<transactions_table> m_transactions_table;
     std::string system_account;
+    std::atomic_bool m_stoped;
     uint32_t m_block_num_start;
 };
 

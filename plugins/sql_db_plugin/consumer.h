@@ -17,8 +17,7 @@
 namespace eosio {
 
 template<typename T>
-class consumer final : public boost::noncopyable
-{
+class consumer final : public boost::noncopyable {
 public:
     consumer(std::unique_ptr<consumer_core<T>> core);
     ~consumer();

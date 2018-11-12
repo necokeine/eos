@@ -19,8 +19,7 @@ void transactions_table::drop() {
     }
 }
 
-void transactions_table::create()
-{
+void transactions_table::create() {
     *m_session << "CREATE TABLE transactions("
             "id VARCHAR(64) PRIMARY KEY,"
             "block_id INT NOT NULL,"
@@ -36,8 +35,7 @@ void transactions_table::create()
 
 }
 
-void transactions_table::add(uint32_t block_id, chain::transaction transaction)
-{
+void transactions_table::add(uint32_t block_id, chain::transaction transaction) {
     const auto transaction_id_str = transaction.id().str();
     const auto expiration = std::chrono::seconds{transaction.expiration.sec_since_epoch()}.count();
     *m_session << "INSERT INTO transactions(id, block_id, ref_block_num, ref_block_prefix,"

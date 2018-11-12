@@ -13,8 +13,7 @@
 
 namespace eosio {
 
-class blocks_table
-{
+class blocks_table {
 public:
     blocks_table(std::shared_ptr<soci::session> session);
 

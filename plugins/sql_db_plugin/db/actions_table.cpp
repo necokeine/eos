@@ -3,13 +3,9 @@
 namespace eosio {
 
 actions_table::actions_table(std::shared_ptr<soci::session> session):
-    m_session(session)
-{
+    m_session(session) { }
 
-}
-
-void actions_table::drop()
-{
+void actions_table::drop() {
     try {
         *m_session << "drop table IF EXISTS actions_accounts";
         *m_session << "drop table IF EXISTS stakes";
@@ -22,8 +18,7 @@ void actions_table::drop()
     }
 }
 
-void actions_table::create()
-{
+void actions_table::create() {
     *m_session << "CREATE TABLE actions("
             "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
             "account VARCHAR(12),"
@@ -58,6 +53,7 @@ void actions_table::create()
 
     *m_session << "CREATE TABLE tokens("
             "account VARCHAR(13),"
+            "contract VARCHAR(13),"
             "symbol VARCHAR(10),"
             "amount double(64,4) DEFAULT NULL,"
             "FOREIGN KEY (account) REFERENCES accounts(name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;"; // TODO: other tokens could have diff format.
@@ -101,9 +97,9 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
     auto abi_data = abis.binary_to_variant(abis.get_action_type(action.name), action.data, abi_serializer_max_time);
     string json = fc::json::to_string(abi_data);
 
-    boost::uuids::random_generator gen;
-    boost::uuids::uuid id = gen();
-    std::string action_id = boost::uuids::to_string(id);
+//    boost::uuids::random_generator gen;
+//    boost::uuids::uuid id = gen();
+//    std::string action_id = boost::uuids::to_string(id);
 
     *m_session << "INSERT INTO actions(account, seq, created_at, name, data, transaction_id) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti) ",
             soci::use(action.account.to_string()),
@@ -127,24 +123,27 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
 
 void actions_table::parse_actions(chain::action action, fc::variant abi_data) {
     // TODO: move all  + catch // public keys update // stake / voting
+    auto contract = action.account.to_string();
     if (action.name == N(issue)) {
-
         auto to_name = abi_data["to"].as<chain::name>().to_string();
         auto asset_quantity = abi_data["quantity"].as<chain::asset>();
         int exist;
 
-        *m_session << "SELECT COUNT(*) FROM tokens WHERE account = :ac AND symbol = :sy",
+        *m_session << "SELECT COUNT(*) FROM tokens WHERE account = :ac AND contract = :co AND symbol = :sy",
                 soci::into(exist),
                 soci::use(to_name),
+                soci::use(contract),
                 soci::use(asset_quantity.get_symbol().name());
         if (exist > 0) {
-            *m_session << "UPDATE tokens SET amount = amount + :am WHERE account = :ac AND symbol = :sy",
+            *m_session << "UPDATE tokens SET amount = amount + :am WHERE account = :ac AND contract = :co AND symbol = :sy",
                     soci::use(asset_quantity.to_real()),
                     soci::use(to_name),
+                    soci::use(contract),
                     soci::use(asset_quantity.get_symbol().name());
         } else {
-            *m_session << "INSERT INTO tokens(account, amount, symbol) VALUES (:ac, :am, :as) ",
+            *m_session << "INSERT INTO tokens(account, contract, amount, symbol) VALUES (:ac, :co, :am, :as) ",
                     soci::use(to_name),
+                    soci::use(contract),
                     soci::use(asset_quantity.to_real()),
                     soci::use(asset_quantity.get_symbol().name());
         }
@@ -156,25 +155,29 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data) {
         auto asset_quantity = abi_data["quantity"].as<chain::asset>();
         int exist;
 
-        *m_session << "SELECT COUNT(*) FROM tokens WHERE account = :ac AND symbol = :sy",
+        *m_session << "SELECT COUNT(*) FROM tokens WHERE account = :ac AND contract = :co AND symbol = :sy",
                 soci::into(exist),
                 soci::use(to_name),
+                soci::use(contract),
                 soci::use(asset_quantity.get_symbol().name());
         if (exist > 0) {
-            *m_session << "UPDATE tokens SET amount = amount + :am WHERE account = :ac AND symbol = :sy",
+            *m_session << "UPDATE tokens SET amount = amount + :am WHERE account = :ac AND contract = :co AND symbol = :sy",
                     soci::use(asset_quantity.to_real()),
                     soci::use(to_name),
+                    soci::use(contract),
                     soci::use(asset_quantity.get_symbol().name());
         } else {
-            *m_session << "INSERT INTO tokens(account, amount, symbol) VALUES (:ac, :am, :as) ",
+            *m_session << "INSERT INTO tokens(account, contract, amount, symbol) VALUES (:ac, :co, :am, :as) ",
                     soci::use(to_name),
+                    soci::use(contract),
                     soci::use(asset_quantity.to_real()),
                     soci::use(asset_quantity.get_symbol().name());
         }
 
-        *m_session << "UPDATE tokens SET amount = amount - :am WHERE account = :ac AND symbol = :sy",
+        *m_session << "UPDATE tokens SET amount = amount - :am WHERE account = :ac AND contract = :co AND symbol = :sy",
                 soci::use(asset_quantity.to_real()),
                 soci::use(from_name),
+                soci::use(contract),
                 soci::use(asset_quantity.get_symbol().name());
     }
 
