@@ -31,7 +31,8 @@ public:
     bool is_started();
 
 private:
-    std::shared_ptr<soci::session> m_session;
+    std::shared_ptr<soci::session> m_read_session;
+    std::shared_ptr<soci::session> m_write_session;
     std::unique_ptr<accounts_table> m_accounts_table;
     std::unique_ptr<actions_table> m_actions_table;
     std::unique_ptr<blocks_table> m_blocks_table;

@@ -15,14 +15,14 @@ namespace eosio {
 
 class blocks_table {
 public:
-    blocks_table(std::shared_ptr<soci::session> session);
+    blocks_table(std::shared_ptr<soci::session> write_session);
 
     void drop();
     void create();
     void add(chain::signed_block_ptr block);
 
 private:
-    std::shared_ptr<soci::session> m_session;
+    std::shared_ptr<soci::session> m_write_session;
 };
 
 } // namespace

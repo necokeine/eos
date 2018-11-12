@@ -3,11 +3,13 @@
 namespace eosio {
 
 database::database(const std::string &uri, uint32_t block_num_start) {
-    m_session = std::make_shared<soci::session>(uri);
-    m_accounts_table = std::make_unique<accounts_table>(m_session);
-    m_blocks_table = std::make_unique<blocks_table>(m_session);
-    m_transactions_table = std::make_unique<transactions_table>(m_session);
-    m_actions_table = std::make_unique<actions_table>(m_session);
+    m_write_session = std::make_shared<soci::session>(uri);
+    m_read_session = std::make_shared<soci::session>(uri);
+
+    m_accounts_table = std::make_unique<accounts_table>(m_read_session, m_write_session);
+    m_blocks_table = std::make_unique<blocks_table>(m_write_session);
+    m_transactions_table = std::make_unique<transactions_table>(m_write_session);
+    m_actions_table = std::make_unique<actions_table>(m_read_session, m_write_session);
     m_block_num_start = block_num_start;
     system_account = chain::name(chain::config::system_account_name).to_string();
 }
@@ -23,8 +25,8 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
                 int error_count = 0;
                 while (error_count < 10) {
                     try {
-                       error_count ++;
-                        soci::transaction tran(*m_session);
+                        error_count ++;
+                        soci::transaction tran(*m_write_session);
                         m_blocks_table->add(block->block);
                         for (const auto &transaction : block->trxs) {
                             m_transactions_table->add(block->block_num, transaction->trx);
@@ -72,14 +74,14 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
 
 void
 database::wipe() {
-    *m_session << "SET foreign_key_checks = 0;";
+    *m_write_session << "SET foreign_key_checks = 0;";
 
     m_actions_table->drop();
     m_transactions_table->drop();
     m_blocks_table->drop();
     m_accounts_table->drop();
 
-    *m_session << "SET foreign_key_checks = 1;";
+    *m_write_session << "SET foreign_key_checks = 1;";
 
     m_accounts_table->create();
     m_blocks_table->create();

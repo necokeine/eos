@@ -25,14 +25,15 @@ using std::string;
 class actions_table
 {
 public:
-    actions_table(std::shared_ptr<soci::session> session);
+    actions_table(std::shared_ptr<soci::session> read_session, std::shared_ptr<soci::session> write_session);
 
     void drop();
     void create();
     void add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, uint8_t seq);
 
 private:
-    std::shared_ptr<soci::session> m_session;
+    std::shared_ptr<soci::session> m_read_session;
+    std::shared_ptr<soci::session> m_write_session;
 
     void
     parse_actions(chain::action action, fc::variant variant);

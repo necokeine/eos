@@ -4,12 +4,12 @@
 
 namespace eosio {
 
-blocks_table::blocks_table(std::shared_ptr<soci::session> session):
-        m_session(session) { }
+blocks_table::blocks_table(std::shared_ptr<soci::session> write_session):
+        m_write_session(write_session) { }
 
 void blocks_table::drop() {
     try {
-        *m_session << "DROP TABLE IF EXISTS blocks";
+        *m_write_session << "DROP TABLE IF EXISTS blocks";
     }
     catch(std::exception& e){
         wlog(e.what());
@@ -17,7 +17,7 @@ void blocks_table::drop() {
 }
 
 void blocks_table::create() {
-    *m_session << "CREATE TABLE blocks("
+    *m_write_session << "CREATE TABLE blocks("
             "id VARCHAR(64) PRIMARY KEY,"
             "block_number INT NOT NULL AUTO_INCREMENT,"
             "prev_block_id VARCHAR(64),"
@@ -31,8 +31,8 @@ void blocks_table::create() {
             "num_transactions INT DEFAULT 0,"
             "confirmed INT, UNIQUE KEY block_number (block_number)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
 
-    *m_session << "CREATE INDEX idx_blocks_producer ON blocks (producer);";
-    *m_session << "CREATE INDEX idx_blocks_number ON blocks (block_number);";
+    *m_write_session << "CREATE INDEX idx_blocks_producer ON blocks (producer);";
+    *m_write_session << "CREATE INDEX idx_blocks_number ON blocks (block_number);";
 }
 
 void blocks_table::add(chain::signed_block_ptr block) {
@@ -43,7 +43,7 @@ void blocks_table::add(chain::signed_block_ptr block) {
     const auto timestamp = std::chrono::seconds{block->timestamp.operator fc::time_point().sec_since_epoch()}.count();
     const auto num_transactions = (int)block->transactions.size();
 
-    *m_session << "REPLACE INTO blocks(id, block_number, prev_block_id, timestamp, transaction_merkle_root, action_merkle_root,"
+    *m_write_session << "REPLACE INTO blocks(id, block_number, prev_block_id, timestamp, transaction_merkle_root, action_merkle_root,"
             "producer, version, confirmed, num_transactions) VALUES (:id, :in, :pb, FROM_UNIXTIME(:ti), :tr, :ar, :pa, :ve, :pe, :nt)",
             soci::use(block_id_str),
             soci::use(block->block_num()),
@@ -58,7 +58,7 @@ void blocks_table::add(chain::signed_block_ptr block) {
 
     if (block->new_producers) {
         const auto new_producers = fc::json::to_string(block->new_producers->producers);
-        *m_session << "UPDATE blocks SET new_producers = :np WHERE id = :id",
+        *m_write_session << "UPDATE blocks SET new_producers = :np WHERE id = :id",
                 soci::use(new_producers),
                 soci::use(block_id_str);
     }
