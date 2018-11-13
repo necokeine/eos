@@ -16,7 +16,7 @@ database::database(const std::string &uri, uint32_t block_num_start) {
 }
 
 void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
-    dlog("consuming " + blocks[0]->block_num);
+    dlog("consuming " + std::to_string(blocks[0]->block_num));
     if (m_stoped) return; // Already a unhandled error happen.
     try {
         for (const auto &block : blocks) {
@@ -52,7 +52,7 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
                         wlog("${e}", ("e", ex.what()));
                     } catch (...) {
                         elog(boost::current_exception_diagnostic_information());
-                        elog("Unknown expection during consuming block: " + block->block_num);
+                        elog("Unknown expection during consuming block: " + std::to_string(block->block_num));
                     }
                 }
                 if (error_count) {
@@ -64,7 +64,7 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
                 wlog("${e}", ("e", ex.what()));
             } catch (...) {
                 elog(boost::current_exception_diagnostic_information());
-                elog("Unknown expection during consuming block: " + block->block_num);
+                elog("Unknown expection during consuming block: " + std::to_string(block->block_num));
             }
         }
     } catch (const std::exception &ex) {

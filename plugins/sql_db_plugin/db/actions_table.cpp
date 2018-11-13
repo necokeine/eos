@@ -123,13 +123,13 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
                 soci::use(auth.permission.to_string());
     }
     try {
-        parse_actions(action, abi_data);
+        parse_actions(action, abi_data, expiration);
     } catch(std::exception& e){
         wlog(e.what());
     }
 }
 
-void actions_table::parse_actions(chain::action action, fc::variant abi_data) {
+void actions_table::parse_actions(chain::action action, fc::variant abi_data, uint64_t timestamp) {
     // TODO: move all  + catch // public keys update // stake / voting
     auto contract = action.account.to_string();
     if (action.name == N(issue)) {
