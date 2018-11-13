@@ -36,7 +36,7 @@ private:
     std::shared_ptr<soci::session> m_write_session;
 
     void
-    parse_actions(chain::action action, fc::variant variant);
+    parse_actions(chain::action action, fc::variant variant, uint64_t timestamp);
 };
 
 } // namespace
