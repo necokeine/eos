@@ -16,9 +16,9 @@ database::database(const std::string &uri, uint32_t block_num_start) {
 }
 
 void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
-    dlog("consuming " + std::to_string(blocks[0]->block_num));
     if (m_stoped) return; // Already a unhandled error happen.
     try {
+        dlog("consuming " + std::to_string(blocks[0]->block_num) + "; and consume "  + std::to_string(blocks.size()) + " blocks.");
         for (const auto &block : blocks) {
             try {
                 if (m_block_num_start > 0 && block->block_num < m_block_num_start) {

@@ -43,7 +43,7 @@ void blocks_table::add(chain::signed_block_ptr block) {
     const auto timestamp = std::chrono::seconds{block->timestamp.operator fc::time_point().sec_since_epoch()}.count();
     const auto num_transactions = (int)block->transactions.size();
 
-    *m_write_session << "REPLACE INTO blocks(id, block_number, prev_block_id, timestamp, transaction_merkle_root, action_merkle_root,"
+    *m_write_session << "INSERT INTO blocks(id, block_number, prev_block_id, timestamp, transaction_merkle_root, action_merkle_root,"
             "producer, version, confirmed, num_transactions) VALUES (:id, :in, :pb, FROM_UNIXTIME(:ti), :tr, :ar, :pa, :ve, :pe, :nt)",
             soci::use(block_id_str),
             soci::use(block->block_num()),
