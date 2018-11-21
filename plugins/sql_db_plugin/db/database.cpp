@@ -28,7 +28,6 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
                 while (error_count < 10) {
                     try {
                         error_count ++;
-                        soci::transaction tran(*m_write_session);
                         m_blocks_table->add(block->block);
                         for (const auto &transaction : block->trxs) {
                             m_transactions_table->add(block->block_num, transaction->trx);
@@ -43,7 +42,6 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
                                 }
                             }
                         }
-                        tran.commit();
                         error_count = 0; // Commited successfully.
                         break;
                     } catch (const std::exception & ex) {
@@ -83,7 +81,7 @@ database::wipe() {
     m_blocks_table->drop();
     m_accounts_table->drop();
 
-    *m_write_session << "SET foreign_key_checks = 1;";
+    //*m_write_session << "SET foreign_key_checks = 1;";
 
     m_accounts_table->create();
     m_blocks_table->create();

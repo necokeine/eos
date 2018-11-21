@@ -26,13 +26,14 @@ void accounts_table::create() {
     *m_write_session << "CREATE TABLE accounts_keys("
             "account VARCHAR(12),"
             "permission VARCHAR(12),"
-            "public_key varchar(64) DEFAULT NULL,"
-            "FOREIGN KEY (account) REFERENCES accounts(name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
+            "public_key varchar(64) DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
 }
 
 void accounts_table::add(string name) {
-    *m_write_session << "INSERT INTO accounts (name) VALUES (:name)",
-            soci::use(name);
+    *m_write_session << "INSERT INTO accounts (name, created_at, updated_at) VALUES (:name, FROM_UNIXTIME(:ts), FROM_UNIXTIME(:ts))",
+            soci::use(name),
+            soci::use(12345),
+            soci::use(12345);
 }
 
 bool accounts_table::exist(string name) {

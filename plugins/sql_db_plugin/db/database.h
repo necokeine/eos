@@ -20,8 +20,7 @@
 
 namespace eosio {
 
-class database : public consumer_core<chain::block_state_ptr>
-{
+class database : public consumer_core<chain::block_state_ptr> {
 public:
     database(const std::string& uri, uint32_t block_num_start);
 

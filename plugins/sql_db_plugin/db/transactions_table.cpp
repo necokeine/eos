@@ -7,14 +7,12 @@ namespace eosio {
 
 transactions_table::transactions_table(std::shared_ptr<soci::session> write_session):
     m_write_session(write_session) {
-
 }
 
 void transactions_table::drop() {
     try {
         *m_write_session << "DROP TABLE IF EXISTS transactions";
-    }
-    catch(std::exception& e){
+    } catch(std::exception& e){
         wlog(e.what());
     }
 }
@@ -29,7 +27,7 @@ void transactions_table::create() {
             "pending TINYINT(1),"
             "created_at DATETIME DEFAULT NOW(),"
             "num_actions INT DEFAULT 0,"
-            "updated_at DATETIME DEFAULT NOW(), FOREIGN KEY (block_id) REFERENCES blocks(block_number) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
+            "updated_at DATETIME DEFAULT NOW()) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_general_ci;";
 
     *m_write_session << "CREATE INDEX transactions_block_id ON transactions (block_id);";
 
