@@ -191,14 +191,13 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data, ui
         auto newname = abi_data["newname"].as<chain::name>().to_string();
         auto quantity = abi_data["bid"].as<chain::asset>().to_real();
         *m_write_session << "INSERT INTO bids(bidder, newname, quantity, timestamp) VALUES (:bd, :ne, :qu, FROM_UNIXTIME(:ts)) "
-            "ON DUPLICATE KEY UPDATE bidder = :db, quantity = :qu, timestamp = FROM_UNIXTIME(:ts) WHERE timestamp < FROM_UNIXTIME(:ts)",
+            "ON DUPLICATE KEY UPDATE bidder = :db, quantity = :qu, timestamp = FROM_UNIXTIME(:ts)",
             soci::use(bidder),
             soci::use(newname),
             soci::use(quantity),
             soci::use(timestamp),
             soci::use(bidder),
             soci::use(quantity),
-            soci::use(timestamp),
             soci::use(timestamp);
     }
 
@@ -207,12 +206,11 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data, ui
         string votes = fc::json::to_string(abi_data["producers"]);
 
         *m_write_session << "INSERT INTO votes(account, votes, timestamp) VALUES (:ac, :vo, FROM_UNIXTIME(:ts)) "
-            "ON DUPLICATE KEY UPDATE votes = :vo, timestamp = FROM_UNIXTIME(:ts) WHERE timestamp < FROM_UNIXTIME(:ts)",
+            "ON DUPLICATE KEY UPDATE votes = :vo, timestamp = FROM_UNIXTIME(:ts)",
                 soci::use(voter),
                 soci::use(votes),
                 soci::use(timestamp),
                 soci::use(votes),
-                soci::use(timestamp),
                 soci::use(timestamp);
     }
 
@@ -245,13 +243,11 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data, ui
         string abi_string = fc::json::to_string(abi_setabi);
 
         *m_write_session << "INSERT INTO accounts (name, abi, updated_at) VALUES (:na, :abi, :ua) "
-            "ON DUPLICATE KEY UPDATE abi = :abi, updated_at = FROM_UNIXTIME(:ua)"
-            "WHERE updated_at < FROM_UNIXTIME(:ua)",
+            "ON DUPLICATE KEY UPDATE abi = :abi, updated_at = FROM_UNIXTIME(:ua) ",
                 soci::use(action_data.account.to_string()),
                 soci::use(abi_string),
                 soci::use(timestamp),
                 soci::use(abi_string),
-                soci::use(timestamp),
                 soci::use(timestamp);
 
     } else if (action.name == chain::newaccount::get_name()) {
