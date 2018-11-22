@@ -226,7 +226,7 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data, ui
                 soci::use(account),
                 soci::use(cpu),
                 soci::use(net);
-    } else if (action.name = N(undelegatebw)) {
+    } else if (action.name == N(undelegatebw)) {
         auto account = abi_data["receiver"].as<chain::name>().to_string();
         auto cpu = -abi_data["unstake_cpu_quantity"].as<chain::asset>().to_real();
         auto net = -abi_data["unstake_net_quantity"].as<chain::asset>().to_real();
