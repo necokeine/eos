@@ -98,7 +98,7 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
     } else if (action.account == chain::config::system_account_name) {
         abi = chain::eosio_contract_abi(abi);
     } else {
-        *m_write_session << "INSERT INTO actions(account, seq, created_at, name, transaction_id) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti) ",
+        *m_write_session << "INSERT INTO actions(account, seq, created_at, name, transaction_id) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :ti) ",
             soci::use(action.account.to_string()),
             soci::use(seq),
             soci::use(expiration),
@@ -223,6 +223,8 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data, ui
             "ON DUPLICATE KEY UPDATE cpu = cpu + :cp, net = net + :ne",
                 soci::use(account),
                 soci::use(cpu),
+                soci::use(net),
+                soci::use(cpu),
                 soci::use(net);
     } else if (action.name == N(undelegatebw)) {
         auto account = abi_data["receiver"].as<chain::name>().to_string();
@@ -232,6 +234,8 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data, ui
         *m_write_session << "INSERT INTO stakes(account, cpu, net) VALUES (:ac, :cp, :ne) "
             "ON DUPLICATE KEY UPDATE cpu = cpu + :cp, net = net + :ne",
                 soci::use(account),
+                soci::use(cpu),
+                soci::use(net),
                 soci::use(cpu),
                 soci::use(net);
     }
