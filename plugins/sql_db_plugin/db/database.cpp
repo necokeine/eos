@@ -54,7 +54,7 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
                     }
                 }
                 if (error_count) {
-                    m_stoped = true;
+                    //m_stoped = true;
                 }
             } catch (const std::exception & ex) {
                 elog("${e}", ("e", ex.what())); // prevent crash
