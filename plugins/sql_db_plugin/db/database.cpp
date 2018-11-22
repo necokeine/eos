@@ -52,6 +52,7 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
                 while (error_count < 10) {
                     error_count ++;
                     try {
+                        bool has_error = false;
                         for (const auto &transaction : block->trxs) {
                             uint8_t seq = 0;
                             for (const auto& action : transaction->trx.actions) {
@@ -60,12 +61,23 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
                                     seq++;
                                 } catch (const fc::assert_exception &ex) { // malformed actions
                                     wlog("${e}", ("e", ex.what()));
+                                    has_error = true;
+                                    continue;
+                                } catch (const std::exception& ex) {
+                                    wlog("${e}", ("e", ex.what()));
+                                    has_error = true;
+                                    continue;
+                                } catch (...) {
+                                    wlog("Unknown error in exposing Action");
+                                    has_error = true;
                                     continue;
                                 }
                             }
                         }
-                        error_count = 0;
-                        break;
+                        if (!has_error) {
+                            error_count = 0;
+                            break;
+                        }
                     } catch (const std::exception& ex) {
                         elog("Standard exception in exposing actions of block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
                     } catch (const fc::assert_exception &ex) { // malformed actions
