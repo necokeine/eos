@@ -20,19 +20,41 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
     try {
         dlog("consuming " + std::to_string(blocks[0]->block_num) + "; and consume "  + std::to_string(blocks.size()) + " blocks.");
         for (const auto &block : blocks) {
+            if (m_block_num_start > 0 && block->block_num < m_block_num_start) {
+                continue;
+            }
             try {
-                if (m_block_num_start > 0 && block->block_num < m_block_num_start) {
-                    continue;
-                }
                 int error_count = 0;
                 while (error_count < 10) {
+                    error_count ++;
                     try {
-                        error_count ++;
                         m_blocks_table->add(block->block);
                         for (const auto &transaction : block->trxs) {
                             m_transactions_table->add(block->block_num, transaction->trx);
+                        }
+                        error_count = 0;
+                        break;
+                    } catch (const std::exception& ex) {
+                        elog("Standard exception in exposing block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
+                    } catch (const fc::assert_exception &ex) { // malformed actions
+                        wlog("Fc exception in assert exception in block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
+                    } catch (...) {
+                        elog("Unknown expection during adding block: " + std::to_string(block->block_num));
+                    }
+                }
+                if (!error_count) {
+                    ilog("Added block : " + std::to_string(block->block_num));
+                } else {
+                    wlog("Skipping block : " + std::to_string(block->block_num));
+                }
+
+                error_count = 0;
+                while (error_count < 10) {
+                    error_count ++;
+                    try {
+                        for (const auto &transaction : block->trxs) {
                             uint8_t seq = 0;
-                            for (const auto &action : transaction->trx.actions) {
+                            for (const auto& action : transaction->trx.actions) {
                                 try {
                                     m_actions_table->add(action, transaction->trx.id(), transaction->trx.expiration, seq);
                                     seq++;
@@ -42,27 +64,23 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
                                 }
                             }
                         }
-                        error_count = 0; // Commited successfully.
+                        error_count = 0;
                         break;
-                    } catch (const std::exception & ex) {
-                        elog("${e}", ("e", ex.what())); // prevent crash
+                    } catch (const std::exception& ex) {
+                        elog("Standard exception in exposing actions of block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
                     } catch (const fc::assert_exception &ex) { // malformed actions
-                        wlog("${e}", ("e", ex.what()));
+                        wlog("Fc exception in assert exception in actions of block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
                     } catch (...) {
-                        elog(boost::current_exception_diagnostic_information());
-                        elog("Unknown expection during consuming block: " + std::to_string(block->block_num));
+                        elog("Unknown expection during adding actions of block: " + std::to_string(block->block_num));
                     }
                 }
-                if (error_count) {
-                    //m_stoped = true;
+                if (!error_count) {
+                    ilog("Block : "  + std::to_string(block->block_num) + " 's actions inserted successfully.");
+                } else {
+                    wlog("Some actions in Block " + std::to_string(block->block_num) + " inserted failed.");
                 }
-            } catch (const std::exception & ex) {
-                elog("${e}", ("e", ex.what())); // prevent crash
-            } catch (const fc::assert_exception &ex) { // malformed actions
-                wlog("${e}", ("e", ex.what()));
             } catch (...) {
-                elog(boost::current_exception_diagnostic_information());
-                elog("Unknown expection during consuming block: " + std::to_string(block->block_num));
+                elog("Unknown exception during consuming block: " + std::to_string(block->block_num));
             }
         }
     } catch (const std::exception &ex) {

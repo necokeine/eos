@@ -98,6 +98,12 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
     } else if (action.account == chain::config::system_account_name) {
         abi = chain::eosio_contract_abi(abi);
     } else {
+        *m_write_session << "INSERT INTO actions(account, seq, created_at, name, transaction_id) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti) ",
+            soci::use(action.account.to_string()),
+            soci::use(seq),
+            soci::use(expiration),
+            soci::use(action.name.to_string()),
+            soci::use(transaction_id_str);
         return; // no ABI no party. Should we still store it?
     }
 
@@ -121,15 +127,19 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
             soci::use(json),
             soci::use(transaction_id_str);
 
-    for (const auto& auth : action.authorization) {
-        *m_write_session << "INSERT INTO actions_accounts(action_id, actor, permission) VALUES (LAST_INSERT_ID(), :ac, :pe) ",
-                soci::use(auth.actor.to_string()),
-                soci::use(auth.permission.to_string());
-    }
+//    for (const auto& auth : action.authorization) {
+//        *m_write_session << "INSERT INTO actions_accounts(action_id, actor, permission) VALUES (LAST_INSERT_ID(), :ac, :pe) ",
+//                soci::use(auth.actor.to_string()),
+//                soci::use(auth.permission.to_string());
+//    }
     try {
         parse_actions(action, abi_data, expiration);
     } catch(std::exception& e){
         wlog(e.what());
+    } catch(fc::exception& e) {
+        wlog(e.what());
+    } catch(...) {
+        elog("Unknown error during parsing action data: " + transaction_id_str);
     }
     tran.commit();
 }
@@ -140,7 +150,6 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data, ui
     if (action.name == N(issue)) {
         auto to_name = abi_data["to"].as<chain::name>().to_string();
         auto asset_quantity = abi_data["quantity"].as<chain::asset>();
-        int exist;
 
         *m_write_session << "INSERT INTO tokens(account, contract, amount, symbol) VALUES (:ac, :co, :am, :as) "
             "ON DUPLICATE KEY UPDATE amount = amount + :am",
@@ -155,7 +164,6 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data, ui
         auto from_name = abi_data["from"].as<chain::name>().to_string();
         auto to_name = abi_data["to"].as<chain::name>().to_string();
         auto asset_quantity = abi_data["quantity"].as<chain::asset>();
-        int exist;
 
         *m_write_session << "INSERT INTO tokens(account, contract, amount, symbol) VALUES (:ac, :co, :am, :as) "
             "ON DUPLICATE KEY UPDATE amount = amount + :am",
