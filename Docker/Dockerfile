@@ -1,12 +1,10 @@
 FROM necokeine/eosbuilder as builder
 ARG branch=master
 ARG symbol=SYS
-RUN echo 7
-RUN git clone -b $branch https://github.com/necokeine/eos.git --recursive
+RUN echo 18
 
-RUN cd eos/plugins && git clone -b $branch https://github.com/necokeine/kinesis_plugin.git && cd ../..
-
-RUN cd eos && echo "$branch:$(git rev-parse HEAD)" > /etc/eosio-version \
+RUN cd eos/plugins/kinesis_plugin && git pull && cd ../.. && git pull \
+    && echo "$branch:$(git rev-parse HEAD)" > /etc/eosio-version \
     && cmake -H. -B"/tmp/build" -GNinja -DCMAKE_BUILD_TYPE=Release -DWASM_ROOT=/opt/wasm -DCMAKE_CXX_COMPILER=clang++ \
        -DCMAKE_C_COMPILER=clang -DCMAKE_INSTALL_PREFIX=/tmp/build -DBUILD_MONGO_DB_PLUGIN=true -DCORE_SYMBOL_NAME=$symbol \
     && cmake --build /tmp/build --target install && rm /tmp/build/bin/eosiocpp

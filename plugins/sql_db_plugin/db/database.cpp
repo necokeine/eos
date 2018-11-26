@@ -25,72 +25,72 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
             }
             try {
                 int error_count = 0;
-              //while (error_count < 10) {
-              //    error_count ++;
-              //    try {
-              //        m_blocks_table->add(block->block);
-              //        for (const auto &transaction : block->trxs) {
-              //            m_transactions_table->add(block->block_num, transaction->trx);
-              //        }
-              //        error_count = 0;
-              //        break;
-              //    } catch (const std::exception& ex) {
-              //        elog("Standard exception in exposing block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
-              //    } catch (const fc::assert_exception &ex) { // malformed actions
-              //        wlog("Fc exception in assert exception in block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
-              //    } catch (...) {
-              //        elog("Unknown expection during adding block: " + std::to_string(block->block_num));
-              //    }
-              //}
-              //if (!error_count) {
-              //    ilog("Added block : " + std::to_string(block->block_num));
-              //} else {
-              //    wlog("Skipping block : " + std::to_string(block->block_num));
-              //}
-
-              //error_count = 0;
                 while (error_count < 10) {
                     error_count ++;
                     try {
-                        bool has_error = false;
+                        m_blocks_table->add(block->block);
                         for (const auto &transaction : block->trxs) {
-                            uint8_t seq = 0;
-                            for (const auto& action : transaction->trx.actions) {
-                                try {
-                                    m_actions_table->add(action, transaction->trx.id(), transaction->trx.expiration, seq);
-                                    seq++;
-                                } catch (const fc::assert_exception &ex) { // malformed actions
-                                    wlog("${e}", ("e", ex.what()));
-                                    has_error = true;
-                                    continue;
-                                } catch (const std::exception& ex) {
-                                    wlog("${e}", ("e", ex.what()));
-                                    has_error = true;
-                                    continue;
-                                } catch (...) {
-                                    wlog("Unknown error in exposing Action");
-                                    has_error = true;
-                                    continue;
-                                }
-                            }
+                            m_transactions_table->add(block->block_num, transaction->trx);
                         }
-                        if (!has_error) {
-                            error_count = 0;
-                            break;
-                        }
+                        error_count = 0;
+                        break;
                     } catch (const std::exception& ex) {
-                        elog("Standard exception in exposing actions of block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
+                        elog("Standard exception in exposing block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
                     } catch (const fc::assert_exception &ex) { // malformed actions
-                        wlog("Fc exception in assert exception in actions of block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
+                        wlog("Fc exception in assert exception in block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
                     } catch (...) {
-                        elog("Unknown expection during adding actions of block: " + std::to_string(block->block_num));
+                        elog("Unknown expection during adding block: " + std::to_string(block->block_num));
                     }
                 }
                 if (!error_count) {
-                    ilog("Block : "  + std::to_string(block->block_num) + " 's actions inserted successfully.");
+                    ilog("Added block : " + std::to_string(block->block_num));
                 } else {
-                    wlog("Some actions in Block " + std::to_string(block->block_num) + " inserted failed.");
+                    wlog("Skipping block : " + std::to_string(block->block_num));
                 }
+
+              //error_count = 0;
+              //while (error_count < 10) {
+              //    error_count ++;
+              //    try {
+              //        bool has_error = false;
+              //        for (const auto &transaction : block->trxs) {
+              //            uint8_t seq = 0;
+              //            for (const auto& action : transaction->trx.actions) {
+              //                try {
+              //                    m_actions_table->add(action, transaction->trx.id(), transaction->trx.expiration, seq);
+              //                    seq++;
+              //                } catch (const fc::assert_exception &ex) { // malformed actions
+              //                    wlog("${e}", ("e", ex.what()));
+              //                    has_error = true;
+              //                    continue;
+              //                } catch (const std::exception& ex) {
+              //                    wlog("${e}", ("e", ex.what()));
+              //                    has_error = true;
+              //                    continue;
+              //                } catch (...) {
+              //                    wlog("Unknown error in exposing Action");
+              //                    has_error = true;
+              //                    continue;
+              //                }
+              //            }
+              //        }
+              //        if (!has_error) {
+              //            error_count = 0;
+              //            break;
+              //        }
+              //    } catch (const std::exception& ex) {
+              //        elog("Standard exception in exposing actions of block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
+              //    } catch (const fc::assert_exception &ex) { // malformed actions
+              //        wlog("Fc exception in assert exception in actions of block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
+              //    } catch (...) {
+              //        elog("Unknown expection during adding actions of block: " + std::to_string(block->block_num));
+              //    }
+              //}
+              //if (!error_count) {
+              //    ilog("Block : "  + std::to_string(block->block_num) + " 's actions inserted successfully.");
+              //} else {
+              //    wlog("Some actions in Block " + std::to_string(block->block_num) + " inserted failed.");
+              //}
             } catch (...) {
                 elog("Unknown exception during consuming block: " + std::to_string(block->block_num));
             }
