@@ -22,8 +22,7 @@ namespace eosio {
 
 static appbase::abstract_plugin& _sql_db_plugin = app().register_plugin<sql_db_plugin>();
 
-void sql_db_plugin::set_program_options(options_description& cli, options_description& cfg)
-{
+void sql_db_plugin::set_program_options(options_description& cli, options_description& cfg) {
     dlog("set_program_options");
 
     cfg.add_options()

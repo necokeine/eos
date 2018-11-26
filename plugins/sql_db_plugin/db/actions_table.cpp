@@ -134,6 +134,7 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
 //    }
     try {
         parse_actions(action, abi_data, expiration);
+        tran.commit();
     } catch(std::exception& e){
         wlog(e.what());
     } catch(fc::exception& e) {
@@ -141,7 +142,6 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
     } catch(...) {
         elog("Unknown error during parsing action data: " + transaction_id_str);
     }
-    tran.commit();
 }
 
 void actions_table::parse_actions(chain::action action, fc::variant abi_data, uint64_t timestamp) {
