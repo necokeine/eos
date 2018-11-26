@@ -25,30 +25,30 @@ void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
             }
             try {
                 int error_count = 0;
-                while (error_count < 10) {
-                    error_count ++;
-                    try {
-                        m_blocks_table->add(block->block);
-                        for (const auto &transaction : block->trxs) {
-                            m_transactions_table->add(block->block_num, transaction->trx);
-                        }
-                        error_count = 0;
-                        break;
-                    } catch (const std::exception& ex) {
-                        elog("Standard exception in exposing block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
-                    } catch (const fc::assert_exception &ex) { // malformed actions
-                        wlog("Fc exception in assert exception in block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
-                    } catch (...) {
-                        elog("Unknown expection during adding block: " + std::to_string(block->block_num));
-                    }
-                }
-                if (!error_count) {
-                    ilog("Added block : " + std::to_string(block->block_num));
-                } else {
-                    wlog("Skipping block : " + std::to_string(block->block_num));
-                }
+              //while (error_count < 10) {
+              //    error_count ++;
+              //    try {
+              //        m_blocks_table->add(block->block);
+              //        for (const auto &transaction : block->trxs) {
+              //            m_transactions_table->add(block->block_num, transaction->trx);
+              //        }
+              //        error_count = 0;
+              //        break;
+              //    } catch (const std::exception& ex) {
+              //        elog("Standard exception in exposing block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
+              //    } catch (const fc::assert_exception &ex) { // malformed actions
+              //        wlog("Fc exception in assert exception in block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
+              //    } catch (...) {
+              //        elog("Unknown expection during adding block: " + std::to_string(block->block_num));
+              //    }
+              //}
+              //if (!error_count) {
+              //    ilog("Added block : " + std::to_string(block->block_num));
+              //} else {
+              //    wlog("Skipping block : " + std::to_string(block->block_num));
+              //}
 
-                error_count = 0;
+              //error_count = 0;
                 while (error_count < 10) {
                     error_count ++;
                     try {
