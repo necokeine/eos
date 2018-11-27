@@ -84,34 +84,44 @@ void actions_table::create() {
 }
 
 void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, uint8_t seq) {
-    chain::abi_def abi;
-    std::string abi_def_account;
-    chain::abi_serializer abis;
     soci::indicator ind;
     const auto transaction_id_str = transaction_id.str();
     const auto expiration = boost::chrono::seconds{transaction_time.sec_since_epoch()}.count();
+    auto abi_itr = m_abi_map.find(action.account);
 
-    *m_read_session << "SELECT abi FROM accounts WHERE name = :name", soci::into(abi_def_account, ind), soci::use(action.account.to_string());
-
-    if (!abi_def_account.empty()) {
-        abi = fc::json::from_string(abi_def_account).as<chain::abi_def>();
-    } else if (action.account == chain::config::system_account_name) {
-        abi = chain::eosio_contract_abi(abi);
-    } else {
+    if (action.name != N(transfer) && action.name != N(issue) && action.account != chain::name(chain::config::system_account_name)) {
         *m_write_session << "INSERT INTO actions(account, seq, created_at, name, transaction_id) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :ti) ",
             soci::use(action.account.to_string()),
             soci::use(seq),
             soci::use(expiration),
             soci::use(action.name.to_string()),
             soci::use(transaction_id_str);
-        return; // no ABI no party. Should we still store it?
+        return;
+    } else {
+        // Important action here.
+        if (abi_itr == m_abi_map.end()) {
+            std::string abi_def_account;
+            chain::abi_def abi;
+            *m_read_session << "SELECT abi FROM accounts WHERE name = :name", soci::into(abi_def_account, ind), soci::use(action.account.to_string());
+            if (!abi_def_account.empty()) {
+                abi = fc::json::from_string(abi_def_account).as<chain::abi_def>();
+            } else if (action.account == chain::config::system_account_name) {
+                abi = chain::eosio_contract_abi(abi);
+            } else {
+                *m_write_session << "INSERT INTO actions(account, seq, created_at, name, transaction_id) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :ti) ",
+                    soci::use(action.account.to_string()),
+                    soci::use(seq),
+                    soci::use(expiration),
+                    soci::use(action.name.to_string()),
+                    soci::use(transaction_id_str);
+                return;
+            }
+            m_abi_map[action.account].set_abi(abi, fc::seconds(10));
+            abi_itr = m_abi_map.find(action.account);
+        }
     }
 
-    // Necokeine, to 10 seconds temporarily.
-    const auto abi_serializer_max_time = fc::seconds(10);
-    abis.set_abi(abi, abi_serializer_max_time);
-
-    auto abi_data = abis.binary_to_variant(abis.get_action_type(action.name), action.data, abi_serializer_max_time);
+    auto abi_data = abi_itr->second.binary_to_variant(abi_itr->second.get_action_type(action.name), action.data, fc::seconds(10));
     string json = fc::json::to_string(abi_data);
 
 //    boost::uuids::random_generator gen;
@@ -201,44 +211,44 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data, ui
             soci::use(timestamp);
     }
 
-    if (action.name == N(voteproducer)) {
-        auto voter = abi_data["voter"].as<chain::name>().to_string();
-        string votes = fc::json::to_string(abi_data["producers"]);
+  //if (action.name == N(voteproducer)) {
+  //    auto voter = abi_data["voter"].as<chain::name>().to_string();
+  //    string votes = fc::json::to_string(abi_data["producers"]);
 
-        *m_write_session << "INSERT INTO votes(account, votes, timestamp) VALUES (:ac, :vo, FROM_UNIXTIME(:ts)) "
-            "ON DUPLICATE KEY UPDATE votes = :vo, timestamp = FROM_UNIXTIME(:ts)",
-                soci::use(voter),
-                soci::use(votes),
-                soci::use(timestamp),
-                soci::use(votes),
-                soci::use(timestamp);
-    }
+  //    *m_write_session << "INSERT INTO votes(account, votes, timestamp) VALUES (:ac, :vo, FROM_UNIXTIME(:ts)) "
+  //        "ON DUPLICATE KEY UPDATE votes = :vo, timestamp = FROM_UNIXTIME(:ts)",
+  //            soci::use(voter),
+  //            soci::use(votes),
+  //            soci::use(timestamp),
+  //            soci::use(votes),
+  //            soci::use(timestamp);
+  //}
 
-    if (action.name == N(delegatebw)) {
-        auto account = abi_data["receiver"].as<chain::name>().to_string();
-        auto cpu = abi_data["stake_cpu_quantity"].as<chain::asset>().to_real();
-        auto net = abi_data["stake_net_quantity"].as<chain::asset>().to_real();
+  //if (action.name == N(delegatebw)) {
+  //    auto account = abi_data["receiver"].as<chain::name>().to_string();
+  //    auto cpu = abi_data["stake_cpu_quantity"].as<chain::asset>().to_real();
+  //    auto net = abi_data["stake_net_quantity"].as<chain::asset>().to_real();
 
-        *m_write_session << "INSERT INTO stakes(account, cpu, net) VALUES (:ac, :cp, :ne) "
-            "ON DUPLICATE KEY UPDATE cpu = cpu + :cp, net = net + :ne",
-                soci::use(account),
-                soci::use(cpu),
-                soci::use(net),
-                soci::use(cpu),
-                soci::use(net);
-    } else if (action.name == N(undelegatebw)) {
-        auto account = abi_data["receiver"].as<chain::name>().to_string();
-        auto cpu = -abi_data["unstake_cpu_quantity"].as<chain::asset>().to_real();
-        auto net = -abi_data["unstake_net_quantity"].as<chain::asset>().to_real();
+  //    *m_write_session << "INSERT INTO stakes(account, cpu, net) VALUES (:ac, :cp, :ne) "
+  //        "ON DUPLICATE KEY UPDATE cpu = cpu + :cp, net = net + :ne",
+  //            soci::use(account),
+  //            soci::use(cpu),
+  //            soci::use(net),
+  //            soci::use(cpu),
+  //            soci::use(net);
+  //} else if (action.name == N(undelegatebw)) {
+  //    auto account = abi_data["receiver"].as<chain::name>().to_string();
+  //    auto cpu = -abi_data["unstake_cpu_quantity"].as<chain::asset>().to_real();
+  //    auto net = -abi_data["unstake_net_quantity"].as<chain::asset>().to_real();
 
-        *m_write_session << "INSERT INTO stakes(account, cpu, net) VALUES (:ac, :cp, :ne) "
-            "ON DUPLICATE KEY UPDATE cpu = cpu + :cp, net = net + :ne",
-                soci::use(account),
-                soci::use(cpu),
-                soci::use(net),
-                soci::use(cpu),
-                soci::use(net);
-    }
+  //    *m_write_session << "INSERT INTO stakes(account, cpu, net) VALUES (:ac, :cp, :ne) "
+  //        "ON DUPLICATE KEY UPDATE cpu = cpu + :cp, net = net + :ne",
+  //            soci::use(account),
+  //            soci::use(cpu),
+  //            soci::use(net),
+  //            soci::use(cpu),
+  //            soci::use(net);
+  //}
 
     if (action.name == chain::setabi::get_name()) {
         chain::abi_def abi_setabi;
@@ -246,6 +256,8 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data, ui
         chain::abi_serializer::to_abi(action_data.abi, abi_setabi);
         string abi_string = fc::json::to_string(abi_setabi);
 
+        // Clear local abi cache.
+        m_abi_map.erase(action.account);
         *m_write_session << "INSERT INTO accounts (name, abi, updated_at) VALUES (:na, :abi, :ua) "
             "ON DUPLICATE KEY UPDATE abi = :abi, updated_at = FROM_UNIXTIME(:ua) ",
                 soci::use(action_data.account.to_string()),

@@ -2,6 +2,7 @@
 #define ACTIONS_TABLE_H
 
 #include <memory>
+#include <unordered_map>
 
 #include <soci/soci.h>
 
@@ -34,6 +35,7 @@ public:
 private:
     std::shared_ptr<soci::session> m_read_session;
     std::shared_ptr<soci::session> m_write_session;
+    std::unordered_map<chain::name, chain::abi_serializer> m_abi_map;
 
     void
     parse_actions(chain::action action, fc::variant variant, uint64_t timestamp);
