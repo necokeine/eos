@@ -22,7 +22,7 @@ public:
     fifo(behavior value);
 
     void push(const T& element);
-    std::vector<T> pop_all();
+    std::deque<T> pop_all();
     void set_behavior(behavior value);
 
 private:
@@ -45,15 +45,12 @@ void fifo<T>::push(const T& element) {
 }
 
 template<typename T>
-std::vector<T> fifo<T>::pop_all() {
+std::deque<T> fifo<T>::pop_all() {
     std::unique_lock<std::mutex> lock(m_mux);
     m_cond.wait(lock, [&]{return m_behavior == behavior::not_blocking || !m_deque.empty();});
 
-    std::vector<T> result;
-    while(!m_deque.empty()) {
-        result.push_back(std::move(m_deque.front()));
-        m_deque.pop_front();
-    }
+    std::deque<T> result = std::move(m_deque);
+    m_deque.clear();
     return result;
 }
 

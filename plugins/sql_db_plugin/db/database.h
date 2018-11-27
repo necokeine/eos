@@ -6,6 +6,7 @@
 #include <memory>
 #include <mutex>
 #include <atomic>
+#include <deque>
 
 #include <soci/soci.h>
 
@@ -24,7 +25,7 @@ class database : public consumer_core<chain::block_state_ptr> {
 public:
     database(const std::string& uri, uint32_t block_num_start);
 
-    void consume(const std::vector<chain::block_state_ptr>& blocks) override;
+    void consume(const std::deque<chain::block_state_ptr>& blocks) override;
 
     void wipe();
     bool is_started();

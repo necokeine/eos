@@ -44,7 +44,8 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
         wlog("db URI not specified => eosio::sql_db_plugin disabled.");
         return;
     }
-    ilog("connecting to ${u}", ("u", uri_str));
+    //ilog("connecting to ${u}", ("u", uri_str));
+    ilog("Connecting to Database");
     uint32_t block_num_start = options.at(BLOCK_START_OPTION).as<uint32_t>();
     auto db = std::make_unique<database>(uri_str, block_num_start);
 

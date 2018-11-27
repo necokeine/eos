@@ -14,7 +14,7 @@ database::database(const std::string &uri, uint32_t block_num_start) {
     m_stoped = false;
 }
 
-void database::consume(const std::vector<chain::block_state_ptr> &blocks) {
+void database::consume(const std::deque<chain::block_state_ptr>& blocks) {
     if (m_stoped) return; // Already a unhandled error happen.
     try {
         if (m_block_num_start > 0 && blocks[0]->block_num + blocks.size() < m_block_num_start) {

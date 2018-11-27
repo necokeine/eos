@@ -84,7 +84,6 @@ void actions_table::create() {
 }
 
 void actions_table::add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, uint8_t seq) {
-    soci::indicator ind;
     const auto transaction_id_str = transaction_id.str();
     const auto expiration = boost::chrono::seconds{transaction_time.sec_since_epoch()}.count();
     auto abi_itr = m_abi_map.find(action.account);
@@ -102,6 +101,7 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
         if (abi_itr == m_abi_map.end()) {
             std::string abi_def_account;
             chain::abi_def abi;
+            soci::indicator ind;
             *m_read_session << "SELECT abi FROM accounts WHERE name = :name", soci::into(abi_def_account, ind), soci::use(action.account.to_string());
             if (!abi_def_account.empty()) {
                 abi = fc::json::from_string(abi_def_account).as<chain::abi_def>();
@@ -151,6 +151,38 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
         wlog(e.what());
     } catch(...) {
         elog("Unknown error during parsing action data: " + transaction_id_str);
+    }
+}
+
+void actions_table::remove(uint64_t action_id) {
+    soci::transaction tran(*m_write_session);
+    try {
+        soci::indicator ind_to, ind_from, ind_quantity;
+        std::string eosfrom, eosto, quantity;
+        std::string account, name;
+        *m_read_session << "SELECT account, name, eosfrom, eosto, quantity FROM actions WHERE id = :id",
+            soci::into(account), soci::into(name), soci::into(eosfrom, ind_from), soci::into(eosto, ind_to), soci::into(quantity, ind_quantity),
+            soci::use(action_id);
+        if (ind_quantity != soci::i_null) {
+            auto ast = eosio::chain::asset::from_string(quantity);
+            if (ind_to != soci::i_null) {
+                *m_write_session << "UPDATE tokens SET amount = amount - :am WHERE account = :ac, contract = :co, symbol = :sy",
+                    soci::use(ast.to_real()), soci::use(eosto), soci::use(account), soci::use(ast.get_symbol().name());
+            }
+            if (ind_from != soci::i_null) {
+                *m_write_session << "UPDATE tokens SET amount = amount + :am WHERE account = :ac, contract = :co, symbol = :sy",
+                    soci::use(ast.to_real()), soci::use(eosfrom), soci::use(account), soci::use(ast.get_symbol().name());
+            }
+        }
+        *m_write_session << "DELETE FROM actions WHERE id = :id",
+            soci::use(action_id);
+        tran.commit();
+    } catch(std::exception& e) {
+        elog(string("STD error ") + e.what() + " during delete action : " + std::to_string(action_id));
+    } catch(fc::exception& e) {
+        elog(string("FC error ") + e.what() + " during delete action : " + std::to_string(action_id));
+    } catch(...) {
+        elog("Unknown error during delete action : " + std::to_string(action_id));
     }
 }
 
@@ -249,6 +281,9 @@ void actions_table::parse_actions(chain::action action, fc::variant abi_data, ui
   //            soci::use(cpu),
   //            soci::use(net);
   //}
+
+    //if (action.name == chain::buyram::get_name()) {
+    //}
 
     if (action.name == chain::setabi::get_name()) {
         chain::abi_def abi_setabi;
