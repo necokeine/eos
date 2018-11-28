@@ -5,7 +5,7 @@
  */
 #include <eosio/sql_db_plugin/sql_db_plugin.hpp>
 
-#include "database.h"
+#include "dumper.h"
 
 namespace {
 const char* BLOCK_START_OPTION = "sql_db-block-start";
@@ -47,13 +47,12 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
     //ilog("connecting to ${u}", ("u", uri_str));
     ilog("Connecting to Database");
     uint32_t block_num_start = options.at(BLOCK_START_OPTION).as<uint32_t>();
-    auto db = std::make_unique<database>(uri_str, block_num_start);
+    auto db = std::make_unique<dumper>(uri_str, block_num_start);
 
     if (options.at(HARD_REPLAY_OPTION).as<bool>() ||
         options.at(REPLAY_OPTION).as<bool>() ||
         options.at(RESYNC_OPTION).as<bool>() ||
-        !db->is_started())
-    {
+        !db->is_started()) {
         if (block_num_start == 0) {
             ilog("Resync requested: wiping database");
             db->wipe();
@@ -71,13 +70,11 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
     m_block_connection.emplace(chain.accepted_block.connect([=](const chain::block_state_ptr& b) {m_block_consumer->push(b);}));
 }
 
-void sql_db_plugin::plugin_startup()
-{
+void sql_db_plugin::plugin_startup() {
     ilog("startup");
 }
 
-void sql_db_plugin::plugin_shutdown()
-{
+void sql_db_plugin::plugin_shutdown() {
     ilog("shutdown");
     m_block_connection.reset();
     //m_irreversible_block_connection.reset();

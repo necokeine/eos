@@ -1,6 +1,6 @@
 message(STATUS "Database SQL plugin: enabled")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} include db)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} include dumper db)
 
 add_library(sql_db_plugin
     db/database.cpp
@@ -8,6 +8,7 @@ add_library(sql_db_plugin
     db/transactions_table.cpp
     db/blocks_table.cpp
     db/actions_table.cpp
+    dumper/dumper.cpp
     sql_db_plugin.cpp
     )
 
