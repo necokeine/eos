@@ -56,9 +56,10 @@ void consumer<T>::push(const T& element) {
 template<typename T>
 void consumer<T>::run() {
     dlog("Consumer thread Start");
-    while (!m_exit) {
+    while (true) {
         try {
             auto elements = m_fifo.pop_all();
+            if (m_exit && elements.size() == 0) break;
             m_core->consume(elements);
         } catch (fc::exception &e) {
             elog("FC Exception while consume data: ${e}", ("e", e.to_detail_string()));
