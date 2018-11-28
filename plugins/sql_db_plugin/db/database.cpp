@@ -20,6 +20,11 @@ void database::consume(const std::deque<chain::block_state_ptr>& blocks) {
         if (m_block_num_start > 0 && blocks[0]->block_num + blocks.size() < m_block_num_start) {
             return;
         }
+        // After long wait, reconnect database.
+        if (blocks[0]->block_num <= m_block_num_start) {
+            m_read_session->reconnect();
+            m_write_session->reconnect();
+        }
         dlog("consuming " + std::to_string(blocks[0]->block_num) + "; and consume "  + std::to_string(blocks.size()) + " blocks.");
         for (const auto &block : blocks) {
             if (m_block_num_start > 0 && block->block_num < m_block_num_start) {
