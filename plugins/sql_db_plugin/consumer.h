@@ -30,7 +30,7 @@ private:
 
     fifo<T> m_fifo;
     std::atomic<bool> m_exit;
-    std::vector<std::unique_ptr<consumer_core<T>> m_database_pool;
+    std::vector<std::unique_ptr<consumer_core<T>>> m_database_pool;
     std::vector<std::unique_ptr<std::thread>> m_thread_pool;
 };
 
