@@ -2,7 +2,7 @@
 
 namespace eosio {
 
-database::database(const std::string &uri, uint32_t block_num_start) {
+database::database(const std::string &uri, uint32_t block_num_start, uint32_t block_num_stop) {
     m_write_session = std::make_shared<soci::session>(uri);
     m_read_session = std::make_shared<soci::session>(uri);
     m_accounts_table = std::make_unique<accounts_table>(m_read_session, m_write_session);
@@ -10,6 +10,7 @@ database::database(const std::string &uri, uint32_t block_num_start) {
     m_transactions_table = std::make_unique<transactions_table>(m_write_session);
     m_actions_table = std::make_unique<actions_table>(m_read_session, m_write_session);
     m_block_num_start = block_num_start;
+    m_block_num_stop = block_num_stop;
     system_account = chain::name(chain::config::system_account_name).to_string();
     m_stoped = false;
 }
@@ -91,12 +92,18 @@ void database::consume(const std::deque<chain::block_state_ptr>& blocks) {
         if (m_block_num_start > 0 && blocks[0]->block_num + blocks.size() < m_block_num_start) {
             return;
         }
+        if (m_block_num_stop > 0 && blocks[0]->block_num > m_block_num_stop) {
+            return;
+        }
         ilog("consuming " + std::to_string(blocks[0]->block_num) + "; and consume "  + std::to_string(blocks.size()) + " blocks.");
         check_session(m_read_session);
         check_session(m_write_session);
         for (const auto &block : blocks) {
             if (m_block_num_start > 0 && block->block_num < m_block_num_start) {
-                return;
+                continue;
+            }
+            if (m_block_num_stop > 0 && block->block_num >= m_block_num_stop) {
+                break;
             }
             process_block(block);
         }
