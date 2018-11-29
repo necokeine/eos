@@ -61,7 +61,7 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
     }
 
     m_block_consumer = std::make_unique<consumer<chain::block_state_ptr>>(std::move(db));
-    // total 4 consumer threads.
+    // total 11 consumer threads.
     for (int i = 0; i < 10; i++) {
         auto new_db = std::make_unique<database>(uri_str, block_num_start);
         m_block_consumer->add_consumer_thread(std::move(new_db));
