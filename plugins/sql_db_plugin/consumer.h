@@ -26,7 +26,7 @@ public:
     void push(const T& element);
 
 private:
-    void run(std::unique_ptr<consumer_core<T> >& core);
+    void run(std::unique_ptr<consumer_core<T> > core);
 
     fifo<T> m_fifo;
     std::atomic<bool> m_exit;
@@ -37,7 +37,7 @@ template<typename T>
 consumer<T>::consumer(std::unique_ptr<consumer_core<T> > core):
     m_fifo(fifo<T>::behavior::blocking),
     m_exit(false) {
-    m_thread_pool.push_back(std::make_unique<std::thread>([&]{this->run(core);}));
+    m_thread_pool.push_back(std::make_unique<std::thread>([&]{this->run(std::move(core));}));
 }
 
 template<typename T>
@@ -50,7 +50,7 @@ consumer<T>::~consumer() {
 }
 template<typename T>
 void consumer<T>::add_consumer_thread(std::unique_ptr<consumer_core<T>> core) {
-    m_thread_pool.push_back(std::make_unique<std::thread>([&]{this->run(core);}));
+    m_thread_pool.push_back(std::make_unique<std::thread>([&]{this->run(std::move(core));}));
 }
 
 template<typename T>
@@ -59,7 +59,7 @@ void consumer<T>::push(const T& element) {
 }
 
 template<typename T>
-void consumer<T>::run(std::unique_ptr<consumer_core<T>>& core) {
+void consumer<T>::run(std::unique_ptr<consumer_core<T>> core) {
     dlog("Consumer thread Start");
     while (true) {
         try {
