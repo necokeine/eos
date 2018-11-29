@@ -29,7 +29,6 @@ private:
     void run(std::unique_ptr<consumer_core<T> >& core);
 
     fifo<T> m_fifo;
-    std::unique_ptr<consumer_core<T>> m_core;
     std::atomic<bool> m_exit;
     std::vector<std::unique_ptr<std::thread>> m_thread_pool;
 };
@@ -37,7 +36,6 @@ private:
 template<typename T>
 consumer<T>::consumer(std::unique_ptr<consumer_core<T> > core):
     m_fifo(fifo<T>::behavior::blocking),
-    m_core(std::move(core)),
     m_exit(false) {
     m_thread_pool.push_back(std::make_unique<std::thread>([&]{this->run(core);}));
 }
