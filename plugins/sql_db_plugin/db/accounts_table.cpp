@@ -4,7 +4,7 @@
 
 namespace eosio {
 
-accounts_table::accounts_table(soci::session* read_session, soci::session* write_session):
+accounts_table::accounts_table(std::shared_ptr<soci::session> read_session, std::shared_ptr<soci::session> write_session):
     m_read_session(read_session), m_write_session(write_session) { }
 
 void accounts_table::drop() {

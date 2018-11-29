@@ -3,9 +3,8 @@
 namespace eosio {
 
 database::database(const std::string &uri, uint32_t block_num_start) {
-    m_database_uri = uri;
-    m_write_session = new soci::session(uri);
-    m_read_session = new soci::session(uri);
+    m_write_session = std::make_shared<soci::session>(uri);
+    m_read_session = std::make_shared<soci::session>(uri);
     m_accounts_table = std::make_unique<accounts_table>(m_read_session, m_write_session);
     m_blocks_table = std::make_unique<blocks_table>(m_write_session);
     m_transactions_table = std::make_unique<transactions_table>(m_write_session);
@@ -15,7 +14,7 @@ database::database(const std::string &uri, uint32_t block_num_start) {
     m_stoped = false;
 }
 
-void database::check_session(soci::session* session) {
+void database::check_session(std::shared_ptr<soci::session> session) {
     //mysql_session_backend* mysql_backend = static_cast<mysql_session_backend*>(session->get_backend());
     //if (mysql_ping(mysql_backend->conn_) == 1) {
     session->reconnect();
@@ -95,8 +94,6 @@ void database::consume(const std::deque<chain::block_state_ptr>& blocks) {
         ilog("consuming " + std::to_string(blocks[0]->block_num) + "; and consume "  + std::to_string(blocks.size()) + " blocks.");
         check_session(m_read_session);
         check_session(m_write_session);
-        if (blocks.size() > 10000) {
-        }
         for (const auto &block : blocks) {
             if (m_block_num_start > 0 && block->block_num < m_block_num_start) {
                 return;

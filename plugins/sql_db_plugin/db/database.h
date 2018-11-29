@@ -31,18 +31,17 @@ public:
     bool is_started();
 
 private:
-    void check_session(soci::session* session);
+    void check_session(std::shared_ptr<soci::session> session);
     void process_block(const chain::block_state_ptr & block);
 
-    soci::session* m_read_session;
-    soci::session* m_write_session;
+    std::shared_ptr<soci::session> m_read_session;
+    std::shared_ptr<soci::session> m_write_session;
     std::unique_ptr<accounts_table> m_accounts_table;
     std::unique_ptr<actions_table> m_actions_table;
     std::unique_ptr<blocks_table> m_blocks_table;
     std::unique_ptr<transactions_table> m_transactions_table;
     std::string system_account;
     std::atomic_bool m_stoped;
-    std::string m_database_uri;
     uint32_t m_block_num_start;
 };
 

@@ -10,7 +10,7 @@ using std::string;
 
 class accounts_table {
 public:
-    accounts_table(soci::session* read_session, soci::session* write_session);
+    accounts_table(std::shared_ptr<soci::session> read_session, std::shared_ptr<soci::session> write_session);
 
     void drop();
     void create();
@@ -18,8 +18,8 @@ public:
     bool exist(string name);
 
 private:
-    soci::session* m_read_session;
-    soci::session* m_write_session;
+    std::shared_ptr<soci::session> m_read_session;
+    std::shared_ptr<soci::session> m_write_session;
 };
 
 } // namespace

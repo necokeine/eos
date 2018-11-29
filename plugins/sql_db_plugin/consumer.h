@@ -22,9 +22,7 @@ public:
     consumer(std::unique_ptr<consumer_core<T> > core);
     ~consumer();
 
-
     void add_consumer_thread(std::unique_ptr<consumer_core<T>> core);
-
     void push(const T& element);
 
 private:

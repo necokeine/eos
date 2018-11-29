@@ -4,7 +4,7 @@
 
 namespace eosio {
 
-blocks_table::blocks_table(soci::session* write_session):
+blocks_table::blocks_table(std::shared_ptr<soci::session> write_session):
         m_write_session(write_session) { }
 
 void blocks_table::drop() {

@@ -26,7 +26,7 @@ using std::string;
 class actions_table
 {
 public:
-    actions_table(soci::session* read_session, soci::session* write_session);
+    actions_table(std::shared_ptr<soci::session> read_session, std::shared_ptr<soci::session> write_session);
 
     void drop();
     void create();
@@ -34,8 +34,8 @@ public:
     void remove(uint64_t action_id);
 
 private:
-    soci::session* m_read_session;
-    soci::session* m_write_session;
+    std::shared_ptr<soci::session> m_read_session;
+    std::shared_ptr<soci::session> m_write_session;
     std::unordered_map<chain::name, chain::abi_serializer> m_abi_map;
 
     void

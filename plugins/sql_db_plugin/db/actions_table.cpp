@@ -3,8 +3,8 @@
 namespace eosio {
 
 actions_table::actions_table(
-    soci::session* read_session,
-    soci::session* write_session):
+    std::shared_ptr<soci::session> read_session,
+    std::shared_ptr<soci::session> write_session):
     m_read_session(read_session), m_write_session(write_session) { }
 
 void actions_table::drop() {
