@@ -26,10 +26,11 @@ public:
     void push(const T& element);
 
 private:
-    void run(std::unique_ptr<consumer_core<T> > core);
+    void run(consumer_core<T>* core);
 
     fifo<T> m_fifo;
     std::atomic<bool> m_exit;
+    std::vector<std::unique_ptr<consumer_core<T>> m_database_pool;
     std::vector<std::unique_ptr<std::thread>> m_thread_pool;
 };
 
@@ -37,7 +38,8 @@ template<typename T>
 consumer<T>::consumer(std::unique_ptr<consumer_core<T> > core):
     m_fifo(fifo<T>::behavior::blocking),
     m_exit(false) {
-    m_thread_pool.push_back(std::make_unique<std::thread>([&]{this->run(std::move(core));}));
+    m_database_pool.push_back(std::move(core));
+    m_thread_pool.push_back(std::make_unique<std::thread>([&]{this->run(m_database_pool.back().get());}));
 }
 
 template<typename T>
@@ -50,7 +52,8 @@ consumer<T>::~consumer() {
 }
 template<typename T>
 void consumer<T>::add_consumer_thread(std::unique_ptr<consumer_core<T>> core) {
-    m_thread_pool.push_back(std::make_unique<std::thread>([&]{this->run(std::move(core));}));
+    m_database_pool.push_back(std::move(core));
+    m_thread_pool.push_back(std::make_unique<std::thread>([&]{this->run(m_database_pool.back().get());}));
 }
 
 template<typename T>
@@ -59,13 +62,13 @@ void consumer<T>::push(const T& element) {
 }
 
 template<typename T>
-void consumer<T>::run(std::unique_ptr<consumer_core<T>> core) {
+void consumer<T>::run(consumer_core<T>* core) {
     dlog("Consumer thread Start");
     while (true) {
         try {
             auto elements = m_fifo.pop_all();
             if (m_exit && (elements.size() == 0)) break;
-            //core->consume(elements);
+            core->consume(elements);
         } catch (fc::exception &e) {
             elog("FC Exception while consume data: ${e}", ("e", e.to_detail_string()));
         } catch (std::exception &e) {
