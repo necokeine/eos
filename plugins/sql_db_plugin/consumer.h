@@ -64,8 +64,8 @@ void consumer<T>::run(std::unique_ptr<consumer_core<T>> core) {
     while (true) {
         try {
             auto elements = m_fifo.pop_all();
-            if (m_exit && elements.size() == 0) break;
-            core->consume(elements);
+            if (m_exit && (elements.size() == 0)) break;
+            //core->consume(elements);
         } catch (fc::exception &e) {
             elog("FC Exception while consume data: ${e}", ("e", e.to_detail_string()));
         } catch (std::exception &e) {
