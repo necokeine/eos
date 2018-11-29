@@ -9,14 +9,14 @@ namespace eosio {
 
 class transactions_table {
 public:
-    transactions_table(std::shared_ptr<soci::session> write_session);
+    transactions_table(soci::session* write_session);
 
     void drop();
     void create();
     void add(uint32_t block_id, chain::transaction transaction);
 
 private:
-    std::shared_ptr<soci::session> m_write_session;
+    soci::session* m_write_session;
 };
 
 } // namespace

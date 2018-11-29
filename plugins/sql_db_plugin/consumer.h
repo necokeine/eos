@@ -19,33 +19,42 @@ namespace eosio {
 template<typename T>
 class consumer final : public boost::noncopyable {
 public:
-    consumer(std::unique_ptr<consumer_core<T>> core);
+    consumer(std::unique_ptr<consumer_core<T> > core);
     ~consumer();
+
+
+    void add_consumer_thread(std::unique_ptr<consumer_core<T>> core);
 
     void push(const T& element);
 
 private:
-    void run();
+    void run(std::unique_ptr<consumer_core<T> >& core);
 
     fifo<T> m_fifo;
     std::unique_ptr<consumer_core<T>> m_core;
     std::atomic<bool> m_exit;
-    std::unique_ptr<std::thread> m_thread;
+    std::vector<std::unique_ptr<std::thread>> m_thread_pool;
 };
 
 template<typename T>
 consumer<T>::consumer(std::unique_ptr<consumer_core<T> > core):
     m_fifo(fifo<T>::behavior::blocking),
     m_core(std::move(core)),
-    m_exit(false),
-    m_thread(std::make_unique<std::thread>([&]{this->run();})) {
+    m_exit(false) {
+    m_thread_pool.push_back(std::make_unique<std::thread>([&]{this->run(core);}));
 }
 
 template<typename T>
 consumer<T>::~consumer() {
     m_fifo.set_behavior(fifo<T>::behavior::not_blocking);
     m_exit = true;
-    m_thread->join();
+    for (auto& thread : m_thread_pool) {
+        thread->join();
+    }
+}
+template<typename T>
+void consumer<T>::add_consumer_thread(std::unique_ptr<consumer_core<T>> core) {
+    m_thread_pool.push_back(std::make_unique<std::thread>([&]{this->run(core);}));
 }
 
 template<typename T>
@@ -54,13 +63,13 @@ void consumer<T>::push(const T& element) {
 }
 
 template<typename T>
-void consumer<T>::run() {
+void consumer<T>::run(std::unique_ptr<consumer_core<T>>& core) {
     dlog("Consumer thread Start");
     while (true) {
         try {
             auto elements = m_fifo.pop_all();
             if (m_exit && elements.size() == 0) break;
-            m_core->consume(elements);
+            core->consume(elements);
         } catch (fc::exception &e) {
             elog("FC Exception while consume data: ${e}", ("e", e.to_detail_string()));
         } catch (std::exception &e) {

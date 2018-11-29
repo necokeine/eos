@@ -5,7 +5,7 @@
 
 namespace eosio {
 
-transactions_table::transactions_table(std::shared_ptr<soci::session> write_session):
+transactions_table::transactions_table(soci::session* write_session):
     m_write_session(write_session) {
 }
 
