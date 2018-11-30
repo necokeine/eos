@@ -56,8 +56,7 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
     if (options.at(HARD_REPLAY_OPTION).as<bool>() ||
         options.at(REPLAY_OPTION).as<bool>() ||
         options.at(RESYNC_OPTION).as<bool>() ||
-        !db->is_started())
-    {
+        !db->is_started()) {
         if (block_num_start == 0) {
             ilog("Resync requested: wiping database");
             db->wipe();
@@ -78,7 +77,11 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
     auto& chain = chain_plug->chain();
     // TODO: irreversible to different queue to just find block & update flag
     //m_irreversible_block_connection.emplace(chain.irreversible_block.connect([=](const chain::block_state_ptr& b) {m_irreversible_block_consumer->push(b);}));
-    m_block_connection.emplace(chain.accepted_block.connect([=](const chain::block_state_ptr& b) {m_block_consumer->push(b);}));
+    m_block_connection.emplace(chain.accepted_block.connect([=](const chain::block_state_ptr& b) {
+        if ((b->block_num >= block_num_start) && (b->block_num < block_num_stop)) {
+            m_block_consumer->push(b);
+        }
+    }));
 }
 
 void sql_db_plugin::plugin_startup()
@@ -90,6 +93,7 @@ void sql_db_plugin::plugin_shutdown()
 {
     ilog("shutdown");
     m_block_connection.reset();
+    m_block_consumer.reset();
     //m_irreversible_block_connection.reset();
 }
 
