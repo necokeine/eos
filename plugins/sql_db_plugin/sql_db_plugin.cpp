@@ -78,7 +78,7 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
     // TODO: irreversible to different queue to just find block & update flag
     //m_irreversible_block_connection.emplace(chain.irreversible_block.connect([=](const chain::block_state_ptr& b) {m_irreversible_block_consumer->push(b);}));
     m_block_connection.emplace(chain.accepted_block.connect([=](const chain::block_state_ptr& b) {
-        if ((b->block_num >= block_num_start) && (b->block_num < block_num_stop)) {
+        if ((b->block_num >= block_num_start) && ((b->block_num <= 0) || (b->block_num < block_num_stop))) {
             m_block_consumer->push(b);
         }
     }));
