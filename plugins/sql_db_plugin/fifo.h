@@ -26,10 +26,12 @@ public:
     void set_behavior(behavior value);
 
 private:
-    std::mutex m_mux;
     std::condition_variable m_cond;
     std::atomic<behavior> m_behavior;
-    std::deque<T> m_deque;
+    std::mutex m_mux_producer;
+    std::mutex m_mux_consumer;
+    std::deque<T> m_producer;
+    std::deque<T> m_wait_for_pick;
 };
 
 template<typename T>
@@ -39,18 +41,31 @@ fifo<T>::fifo(behavior value) {
 
 template<typename T>
 void fifo<T>::push(const T& element) {
-    std::lock_guard<std::mutex> lock(m_mux);
-    m_deque.push_back(element);
+    std::lock_guard<std::mutex> lock(m_mux_producer);
+    m_producer.push_back(element);
     m_cond.notify_one();
 }
 
 template<typename T>
 std::deque<T> fifo<T>::pop_all() {
-    std::unique_lock<std::mutex> lock(m_mux);
-    m_cond.wait(lock, [&]{return m_behavior == behavior::not_blocking || !m_deque.empty();});
+    std::unique_lock<std::mutex> lock_read(m_mux_consumer);
+    if (m_wait_for_pick.empty()) {
+        std::unique_lock<std::mutex> lock(m_mux_producer);
+        m_cond.wait(lock, [&]{return m_behavior == behavior::not_blocking || !m_producer.empty();});
+        std::swap(m_wait_for_pick, m_producer);
+    }
 
-    std::deque<T> result = std::move(m_deque);
-    m_deque.clear();
+    const int size_per_pick = 10000;
+    std::deque<T> result;
+    result.clear();
+    if (m_wait_for_pick.size() <= size_per_pick) {
+        std::swap(result, m_wait_for_pick);
+    } else {
+        for (int i = 0; i < size_per_pick; i++) {
+            result.push_back(m_wait_for_pick.front());
+            m_wait_for_pick.pop_front();
+        }
+    }
     return result;
 }
 

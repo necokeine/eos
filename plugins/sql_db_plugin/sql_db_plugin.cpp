@@ -51,7 +51,7 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
     ilog("Connecting to Database");
     uint32_t block_num_start = options.at(BLOCK_START_OPTION).as<uint32_t>();
     uint32_t block_num_stop = options.at(BLOCK_STOP_OPTION).as<uint32_t>();
-    auto db = std::make_unique<database>(uri_str, block_num_start, block_num_stop);
+    auto db = std::make_unique<database>(uri_str);
 
     if (options.at(HARD_REPLAY_OPTION).as<bool>() ||
         options.at(REPLAY_OPTION).as<bool>() ||
@@ -66,7 +66,7 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
     m_block_consumer = std::make_unique<consumer<chain::block_state_ptr>>(std::move(db));
     // total 11 consumer threads.
     for (int i = 0; i < 10; i++) {
-        auto new_db = std::make_unique<database>(uri_str, block_num_start, block_num_stop);
+        auto new_db = std::make_unique<database>(uri_str);
         m_block_consumer->add_consumer_thread(std::move(new_db));
     }
 
