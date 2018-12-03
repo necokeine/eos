@@ -86,11 +86,12 @@ void database::process_block(const chain::block_state_ptr & block) {
 
 void database::consume(const std::deque<chain::block_state_ptr>& blocks) {
     try {
-        ilog("consuming " + std::to_string(blocks[0]->block_num) + "; and consume "  + std::to_string(blocks.size()) + " blocks.");
+        ilog("consuming " + std::to_string(blocks.front()->block_num) + "; and consume "  + std::to_string(blocks.size()) + " blocks.");
         check_session(m_read_session);
         check_session(m_write_session);
-        for (const auto &block : blocks) {
-            process_block(block);
+        while (!blocks.empty()) {
+            process_block(block.front());
+            block.pop_front();
         }
     } catch (const std::exception &ex) {
         elog("${e}", ("e", ex.what())); // prevent crash
