@@ -90,8 +90,8 @@ void database::consume(const std::deque<chain::block_state_ptr>& blocks) {
         check_session(m_read_session);
         check_session(m_write_session);
         while (!blocks.empty()) {
-            process_block(block.front());
-            block.pop_front();
+            process_block(blocks.front());
+            blocks.pop_front();
         }
     } catch (const std::exception &ex) {
         elog("${e}", ("e", ex.what())); // prevent crash
