@@ -55,7 +55,7 @@ std::deque<T> fifo<T>::pop_all() {
         std::swap(m_wait_for_pick, m_producer);
     }
 
-    const int size_per_pick = 10000;
+    const int size_per_pick = 1000;
     std::deque<T> result;
     result.clear();
     if (m_wait_for_pick.size() <= size_per_pick) {
