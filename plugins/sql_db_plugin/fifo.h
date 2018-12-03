@@ -62,7 +62,7 @@ std::deque<T> fifo<T>::pop_all() {
         std::swap(result, m_wait_for_pick);
     } else {
         for (int i = 0; i < size_per_pick; i++) {
-            result.push_back(m_wait_for_pick.front());
+            result.push_back(std::move(m_wait_for_pick.front()));
             m_wait_for_pick.pop_front();
         }
     }
@@ -76,5 +76,3 @@ void fifo<T>::set_behavior(behavior value) {
 }
 
 } // namespace
-
-
