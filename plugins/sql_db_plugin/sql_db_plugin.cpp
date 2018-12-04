@@ -93,7 +93,7 @@ void sql_db_plugin::plugin_shutdown()
 {
     ilog("shutdown");
     m_block_connection.reset();
-    m_block_consumer.reset();
+    ilog("Shutdown_Finished");
     //m_irreversible_block_connection.reset();
 }
 
