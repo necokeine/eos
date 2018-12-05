@@ -23,9 +23,12 @@ void database::check_session(std::shared_ptr<soci::session> session) {
 
 void database::process_block(const unsigned int block_num) {
     try {
+        dlog("djkfljdsfklaj")
         chain_apis::read_only::get_block_params request;
         request.block_num_or_id = std::to_string(block_num);
         auto block = m_read_only_api.get_block(request);
+        dlog(fc::json::to_string(block));
+        return;
         
         for (const auto& transaction : block["transactions"].get_array()) {
             if (transaction["status"].as<chain::transaction_receipt_header::status_enum>() !=
@@ -37,12 +40,11 @@ void database::process_block(const unsigned int block_num) {
 
             uint16_t seq = 0;
             for (const auto& action : transaction["trx"]["transaction"]["actions"].get_array()) {
-
-                //m_actions_table->add();
+                //m_actions_table->add(action, transaction_id);
                 seq ++;
             }
             for (const auto& inline_action : transaction["trx"]["transaction"]["actions"].get_array()) {
-
+                seq ++;
             }
             m_transactions_table->add(block_num, block["ref_block_prefix"].as_uint64(), timestamp, transaction);
         }
