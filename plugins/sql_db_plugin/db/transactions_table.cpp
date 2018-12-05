@@ -49,4 +49,22 @@ void transactions_table::add(uint32_t block_id, chain::transaction transaction) 
             soci::use(transaction.total_actions());
 }
 
+void transactions_table::add(uint32_t block_id, uint64_t ref_block_prefix, uint64_t timestamp, const fc::variant& transaction) {
+    const auto transaction_id_str = transaction["trx"]["id"].as_string();
+    const auto ref_block_num = transaction["trx"]["ref_block_num"].as_uint64();
+    const auto total_actions = transaction["trx"]["transaction"]["actions"].get_array().size() + transaction["trx"]["transaction"]["context_free_actions"].get_array().size();
+    *m_write_session << "INSERT INTO transactions(id, block_id, ref_block_num, ref_block_prefix,"
+        "expiration, pending, created_at, updated_at, num_actions) VALUES (:id, :bi, :rbi, :rb, FROM_UNIXTIME(:ex), :pe, FROM_UNIXTIME(:ca), FROM_UNIXTIME(:ua), :na)",
+        soci::use(transaction_id_str),
+        soci::use(block_id),
+        soci::use(ref_block_num),
+        soci::use(ref_block_prefix),
+        soci::use(timestamp),
+        soci::use(0),
+        soci::use(timestamp),
+        soci::use(timestamp),
+        soci::use(total_actions);
+
+}
+
 } // namespace

@@ -20,6 +20,7 @@ public:
     void drop();
     void create();
     void add(chain::signed_block_ptr block);
+    void add(const fc::variant& block, uint64_t timestamp);
 
 private:
     std::shared_ptr<soci::session> m_write_session;

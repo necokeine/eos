@@ -8,7 +8,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
-#include <deque>
+#include <utility>
 #include <vector>
 #include <boost/noncopyable.hpp>
 
@@ -21,52 +21,45 @@ public:
 
     fifo(behavior value);
 
-    void push(const T& element);
-    std::deque<T> pop_all();
+    void push(const unsigned int& block_num);
+    std::pair<unsigned int, unsigned int> pop_all();
     void set_behavior(behavior value);
 
 private:
     std::condition_variable m_cond;
     std::atomic<behavior> m_behavior;
-    std::mutex m_mux_producer;
-    std::mutex m_mux_consumer;
-    std::deque<T> m_producer;
-    std::deque<T> m_wait_for_pick;
+    std::mutex m_mux;
+    unsigned int current_biggest_block;
+    unsigned int last_fetched_block;
 };
 
 template<typename T>
 fifo<T>::fifo(behavior value) {
     m_behavior = value;
+    current_biggest_block = 0;
+    last_fetched_block = 2;
 }
 
 template<typename T>
-void fifo<T>::push(const T& element) {
-    std::lock_guard<std::mutex> lock(m_mux_producer);
-    m_producer.push_back(element);
+void fifo<T>::push(const unsigned int& block_num) {
+    std::lock_guard<std::mutex> lock(m_mux);
+    current_biggest_block = std::max(current_biggest_block, block_num);
     m_cond.notify_one();
 }
 
 template<typename T>
-std::deque<T> fifo<T>::pop_all() {
-    std::unique_lock<std::mutex> lock_read(m_mux_consumer);
-    if (m_wait_for_pick.empty()) {
-        std::unique_lock<std::mutex> lock(m_mux_producer);
-        m_cond.wait(lock, [&]{return m_behavior == behavior::not_blocking || !m_producer.empty();});
-        std::swap(m_wait_for_pick, m_producer);
-    }
+std::pair<unsigned int, unsigned int> fifo<T>::pop_all() {
 
-    const int size_per_pick = 1000;
-    std::deque<T> result;
-    result.clear();
-    if (m_wait_for_pick.size() <= size_per_pick) {
-        std::swap(result, m_wait_for_pick);
-    } else {
-        for (int i = 0; i < size_per_pick; i++) {
-            result.push_back(std::move(m_wait_for_pick.front()));
-            m_wait_for_pick.pop_front();
-        }
+    const unsigned int size_per_pick = 1000;
+    unsigned int left = 0, right = 0;
+    {
+        std::unique_lock<std::mutex> lock(m_mux);
+        m_cond.wait(lock, [&]{return m_behavior == behavior::not_blocking || (current_biggest_block >= last_fetched_block);});
+        left = last_fetched_block;
+        right = std::min(left + size_per_pick, current_biggest_block);
+        last_fetched_block = right + 1;
     }
-    return result;
+    return std::make_pair(left, right);
 }
 
 template<typename T>

@@ -154,6 +154,45 @@ void actions_table::add(chain::action action, chain::transaction_id_type transac
     }
 }
 
+void actions_table::add(const fc::variant& action, const std::string& transaction_id_str, uint64_t timestamp, uint8_t seq) {
+    const string& action_account = action["account"].as_string();
+    const string& action_name = action["name"].as_string();
+    const string& action_data = action["data"].as_string();
+    const string& json = "";
+
+    bool error_during_parse_actions = false;
+    soci::transaction tran(*m_write_session);
+    *m_write_session << "INSERT INTO actions(account, seq, created_at, name, data, transaction_id) VALUES (:ac, :se, FROM_UNIXTIME(:ca), :na, :da, :ti) ",
+            soci::use(action_account),
+            soci::use(seq),
+            soci::use(timestamp),
+            soci::use(action_name),
+            soci::use(json),
+            soci::use(transaction_id_str);
+
+//    for (const auto& auth : action.authorization) {
+//        *m_write_session << "INSERT INTO actions_accounts(action_id, actor, permission) VALUES (LAST_INSERT_ID(), :ac, :pe) ",
+//                soci::use(auth.actor.to_string()),
+//                soci::use(auth.permission.to_string());
+//    }
+    try {
+        //parse_actions(action, abi_data, expiration);
+        tran.commit();
+    } catch(std::exception& e){
+        wlog(e.what());
+        error_during_parse_actions = true;
+    } catch(fc::exception& e) {
+        wlog(e.what());
+    } catch(...) {
+        error_during_parse_actions = true;
+        elog("Unknown error during parsing action data: " + transaction_id_str);
+    }
+    if (error_during_parse_actions) {
+        tran.rollback();
+        // Insert action without data.
+    }
+}
+
 void actions_table::remove(uint64_t action_id) {
     soci::transaction tran(*m_write_session);
     try {
@@ -183,6 +222,16 @@ void actions_table::remove(uint64_t action_id) {
         elog(string("FC error ") + e.what() + " during delete action : " + std::to_string(action_id));
     } catch(...) {
         elog("Unknown error during delete action : " + std::to_string(action_id));
+    }
+}
+
+
+void parse_actions(const fc::variant& action, const string& account_name, const string& action_name, uint64_t timestamp) {
+    if (action_name == "issue") {
+        auto to_name = action["data"]["to"].as<chain::name>().to_string();
+
+    } else if (action_name == "transfer") {
+
     }
 }
 

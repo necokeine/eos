@@ -47,11 +47,18 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
         wlog("db URI not specified => eosio::sql_db_plugin disabled.");
         return;
     }
-    //ilog("connecting to ${u}", ("u", uri_str));
-    ilog("Connecting to Database");
     uint32_t block_num_start = options.at(BLOCK_START_OPTION).as<uint32_t>();
     uint32_t block_num_stop = options.at(BLOCK_STOP_OPTION).as<uint32_t>();
-    auto db = std::make_unique<database>(uri_str);
+
+    //m_irreversible_block_consumer = std::make_unique<consumer<chain::block_state_ptr>>(std::move(db));
+
+    chain_plugin* chain_plug = app().find_plugin<chain_plugin>();
+    FC_ASSERT(chain_plug);
+    auto& chain = chain_plug->chain();
+
+    //ilog("connecting to ${u}", ("u", uri_str));
+    ilog("Connecting to Database");
+    auto db = std::make_unique<database>(uri_str, chain_plug);
 
     if (options.at(HARD_REPLAY_OPTION).as<bool>() ||
         options.at(REPLAY_OPTION).as<bool>() ||
@@ -66,23 +73,19 @@ void sql_db_plugin::plugin_initialize(const variables_map& options) {
     m_block_consumer = std::make_unique<consumer<chain::block_state_ptr>>(std::move(db));
     // total 32 consumer threads.
     for (int i = 1; i < 32; i++) {
-        auto new_db = std::make_unique<database>(uri_str);
-        m_block_consumer->add_consumer_thread(std::move(new_db));
+        auto db = std::make_unique<database>(uri_str, chain_plug);
+        m_block_consumer->add_consumer_thread(std::move(db));
     }
 
-    //m_irreversible_block_consumer = std::make_unique<consumer<chain::block_state_ptr>>(std::move(db));
-
-    chain_plugin* chain_plug = app().find_plugin<chain_plugin>();
-    FC_ASSERT(chain_plug);
-    auto& chain = chain_plug->chain();
     // TODO: irreversible to different queue to just find block & update flag
     //m_irreversible_block_connection.emplace(chain.irreversible_block.connect([=](const chain::block_state_ptr& b) {m_irreversible_block_consumer->push(b);}));
+
     m_block_connection.emplace(chain.accepted_block.connect([=](const chain::block_state_ptr& b) {
         if (b->block_num % 1000 == 0) {
-            ilog("Replayed: " + std::to_string(b->block_num) + " blocks");
+            ilog("Replaye " + std::to_string(b->block_num) + " blocks.");
         }
         if ((b->block_num >= block_num_start) && ((block_num_stop <= 0) || (b->block_num < block_num_stop))) {
-            m_block_consumer->push(b);
+            m_block_consumer->push(b->block_num);
         }
     }));
 }

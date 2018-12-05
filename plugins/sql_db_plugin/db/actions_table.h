@@ -31,6 +31,7 @@ public:
     void drop();
     void create();
     void add(chain::action action, chain::transaction_id_type transaction_id, fc::time_point_sec transaction_time, uint8_t seq);
+    void add(const fc::variant& action, const string& transaction_id_str, uint64_t timestamp, uint8_t seq);
     void remove(uint64_t action_id);
 
 private:

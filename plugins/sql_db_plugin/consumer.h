@@ -23,7 +23,7 @@ public:
     ~consumer();
 
     void add_consumer_thread(std::unique_ptr<consumer_core<T>> core);
-    void push(const T& element);
+    void push(const unsigned int block_num);
 
 private:
     void run(consumer_core<T>* core);
@@ -58,8 +58,8 @@ void consumer<T>::add_consumer_thread(std::unique_ptr<consumer_core<T>> core) {
 }
 
 template<typename T>
-void consumer<T>::push(const T& element) {
-    m_fifo.push(element);
+void consumer<T>::push(const unsigned int block_num) {
+    m_fifo.push(block_num);
 }
 
 template<typename T>
@@ -67,9 +67,9 @@ void consumer<T>::run(consumer_core<T>* core) {
     dlog("Consumer thread Start");
     while (true) {
         try {
-            auto elements = m_fifo.pop_all();
-            if (m_exit && (elements.size() == 0)) break;
-            core->consume(elements);
+            auto pair = m_fifo.pop_all();
+            if (m_exit && (pair.first >= pair.second)) break;
+            core->consume(pair.first, pair.second);
         } catch (fc::exception &e) {
             elog("FC Exception while consume data: ${e}", ("e", e.to_detail_string()));
         } catch (std::exception &e) {

@@ -2,7 +2,9 @@
 
 namespace eosio {
 
-database::database(const std::string &uri) {
+database::database(const std::string &uri, chain_plugin* chain_plug) :
+  m_chain_plug(chain_plug),
+  m_read_only_api(chain_plug->get_read_only_api()) {
     m_write_session = std::make_shared<soci::session>(uri);
     m_read_session = std::make_shared<soci::session>(uri);
     m_accounts_table = std::make_unique<accounts_table>(m_read_session, m_write_session);
@@ -19,78 +21,49 @@ void database::check_session(std::shared_ptr<soci::session> session) {
     //}
 }
 
-void database::process_block(const chain::block_state_ptr & block) {
+void database::process_block(const unsigned int block_num) {
     try {
-        const static int max_error_count = 3;
-        int error_count = 0;
-        while (error_count < max_error_count) {
-            error_count ++;
-            try {
-                m_blocks_table->add(block->block);
-                for (const auto &transaction : block->trxs) {
-                    m_transactions_table->add(block->block_num, transaction->trx);
-                }
-                error_count = 0;
-                break;
-            } catch (const std::exception &ex) {
-                elog("Standard exception in exposing block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
-            } catch (const fc::assert_exception &ex) { // malformed actions
-                wlog("Fc exception in assert exception in block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
-            } catch (...) {
-                elog("Unknown expection during adding block: " + std::to_string(block->block_num));
+        chain_apis::read_only::get_block_params request;
+        request.block_num_or_id = std::to_string(block_num);
+        auto block = m_read_only_api.get_block(request);
+        
+        for (const auto& transaction : block["transactions"].get_array()) {
+            if (transaction["status"].as<chain::transaction_receipt_header::status_enum>() !=
+                chain::transaction_receipt_header::executed) continue;
+
+            chain::time_point_sec expiration;
+            fc::from_variant(transaction["trx"]["expiration"], expiration);
+            const auto timestamp = std::chrono::seconds{expiration.sec_since_epoch()}.count();
+
+            uint16_t seq = 0;
+            for (const auto& action : transaction["trx"]["transaction"]["actions"].get_array()) {
+
+                //m_actions_table->add();
+                seq ++;
             }
+            for (const auto& inline_action : transaction["trx"]["transaction"]["actions"].get_array()) {
+
+            }
+            m_transactions_table->add(block_num, block["ref_block_prefix"].as_uint64(), timestamp, transaction);
         }
 
-        error_count = 0;
-        while (error_count < max_error_count) {
-            error_count ++;
-            try {
-                bool has_error = false;
-                for (const auto &transaction : block->trxs) {
-                    uint8_t seq = 0;
-                    for (const auto& action : transaction->trx.actions) {
-                        try {
-                            m_actions_table->add(action, transaction->trx.id(), transaction->trx.expiration, seq);
-                            seq++;
-                        } catch (const fc::assert_exception &ex) { // malformed actions
-                            wlog("${e}", ("e", ex.what()));
-                            has_error = true;
-                            continue;
-                        } catch (const std::exception& ex) {
-                            wlog("${e}", ("e", ex.what()));
-                            has_error = true;
-                            continue;
-                        } catch (...) {
-                            wlog("Unknown error in exposing Action");
-                            has_error = true;
-                            continue;
-                        }
-                    }
-                }
-                if (!has_error) {
-                    error_count = 0;
-                    break;
-                }
-            } catch (const std::exception& ex) {
-                elog("Standard exception in exposing actions of block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
-            } catch (const fc::assert_exception &ex) { // malformed actions
-                wlog("Fc exception in assert exception in actions of block " + std::to_string(block->block_num) + " : ${e}", ("e", ex.what()));
-            } catch (...) {
-                elog("Unknown expection during adding actions of block: " + std::to_string(block->block_num));
-            }
-        }
+        chain::time_point_sec time;
+        fc::from_variant(block["timestamp"], time);
+        const auto timestamp = std::chrono::seconds{time.sec_since_epoch()}.count();
+        // Block table.
+        m_blocks_table->add(block, timestamp);
     } catch (...) {
-        elog("Unknown exception during consuming block: " + std::to_string(block->block_num));
+
     }
 }
 
-void database::consume(const std::deque<chain::block_state_ptr>& blocks) {
+void database::consume(const unsigned int left, const unsigned int right) {
     try {
-        ilog("consuming " + std::to_string(blocks[0]->block_num) + "; and consume "  + std::to_string(blocks.size()) + " blocks.");
+        ilog("consuming " + std::to_string(left) + " and consume "  + std::to_string(right - left + 1) + " blocks.");
         check_session(m_read_session);
         check_session(m_write_session);
-        for (const auto &block : blocks) {
-            process_block(block);
+        for (auto i = left; i <= right; i++) {
+            process_block(i);
         }
     } catch (const std::exception &ex) {
         elog("${e}", ("e", ex.what())); // prevent crash
