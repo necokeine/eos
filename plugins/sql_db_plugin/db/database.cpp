@@ -27,6 +27,7 @@ void database::process_block(const unsigned int block_num) {
         chain_apis::read_only::get_block_params request;
         request.block_num_or_id = std::to_string(block_num);
         auto block = m_read_only_api.get_block(request);
+        dlog("test 2");
         dlog(fc::json::to_string(block));
         return;
         
