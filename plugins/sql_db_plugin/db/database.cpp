@@ -23,7 +23,7 @@ void database::check_session(std::shared_ptr<soci::session> session) {
 
 void database::process_block(const unsigned int block_num) {
     try {
-        dlog("djkfljdsfklaj")
+        dlog("djkfljdsfklaj");
         chain_apis::read_only::get_block_params request;
         request.block_num_or_id = std::to_string(block_num);
         auto block = m_read_only_api.get_block(request);
