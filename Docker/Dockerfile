@@ -1,7 +1,6 @@
 FROM necokeine/eosbuilder as builder
 ARG branch=master
 ARG symbol=SYS
-RUN echo 18
 
 RUN cd eos/plugins/kinesis_plugin && git pull && cd ../.. && git pull \
     && echo "$branch:$(git rev-parse HEAD)" > /etc/eosio-version \
